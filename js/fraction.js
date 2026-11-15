@@ -76,13 +76,15 @@
    */
   Frac.prototype.toDisplay = function () {
     if (this.d === 1) return String(this.n);
-    var exact2 = this.isTerminating() && Math.abs(Number(this.toDecimalString(2)) - this.toNumber()) < 1e-12;
+    var v = this.toNumber();
+    var exact2 = this.isTerminating() && Math.abs(Number(this.toDecimalString(2)) - v) < 1e-12;
     if (exact2) return this.toDecimalString(2);
-    if (this.d <= 20) {
-      if (this.isTerminating()) return this.toFracString() + '（' + this.toDecimalString(6) + '）';
-      return this.toFracString() + '（約' + this.toDecimalString(2) + '）';
-    }
-    return '約' + this.toDecimalString(2);
+    // 割り切れて、小数第6位までに収まるなら正確な小数（例 0.125、0.004）
+    var exactDec = (this.isTerminating() && Math.abs(Number(this.toDecimalString(6)) - v) < 1e-12) ? this.toDecimalString(6) : null;
+    // 近似：0.1以上は小数第2位まで。0.1未満は「0」に丸めないよう、0でない数字を2けた（例 約0.0033）
+    var approx = Math.abs(v) >= 0.1 ? this.toDecimalString(2) : Number(v.toPrecision(2)).toString();
+    if (this.d <= 20 || Math.abs(v) < 0.1) return this.toFracString() + (exactDec ? '（' + exactDec + '）' : '（約' + approx + '）');
+    return exactDec || ('約' + approx);
   };
   Frac.prototype.toString = function () { return this.toFracString(); };
 

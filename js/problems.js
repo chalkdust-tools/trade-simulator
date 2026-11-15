@@ -245,7 +245,8 @@
       var ans = M.opportunityCost(o.t, p, x, y);
       return {
         params: { p: p, x: x },
-        prompt: o.P[p] + 'が' + o.G[x] + 'を1個つくるとき、あきらめる' + o.G[y] + 'は何個分ですか。（分数でも、小数第2位まででもかまいません）',
+        prompt: o.P[p] + 'が' + o.G[x] + 'を1個つくるとき、あきらめる' + o.G[y] + 'は何個分ですか。' +
+          (ans.toNumber() >= 0.1 ? '（分数でも、小数第2位まででもかまいません）' : '（答えがとても小さいので、分数で答えよう）'),
         answer: ans, unit: '個',
         steps: [o.P[p] + 'は同じ時間で ' + o.G[x] + ' ' + o.t[p][x] + '個、または ' + o.G[y] + ' ' + o.t[p][y] + '個つくれる',
           o.G[x] + ' ' + o.t[p][x] + '個 と ' + o.G[y] + ' ' + o.t[p][y] + '個 が「同じ重さ」',
@@ -687,7 +688,12 @@
     //   ③それより細かい近似（例 0.125、0.667）
     // 切り捨て（1/8→0.12、2/3→0.66）は正解にしない
     var rounded2 = Number(problem.answer.toDecimalString(2));
-    var ok = Math.abs(v - ans) < 1e-9 || Math.abs(v - rounded2) < 1e-9 || Math.abs(v - ans) < 0.001;
+    // ②の「小数第2位で四捨五入」は、答えが0.1以上のときだけ認める
+    //   （答えが小さいと四捨五入で0になり、「機会費用0」を正解にしてしまうため。例 1/250→0 は不正解）
+    // ③の細かい近似は、答えの大きさに対して0.5%未満のずれまで（小さい答えを甘く採点しない）
+    var ok = Math.abs(v - ans) < 1e-9 ||
+      (Math.abs(ans) >= 0.1 && Math.abs(v - rounded2) < 1e-9) ||
+      (ans !== 0 && Math.abs(v - ans) / Math.abs(ans) < 0.005);
     return { ok: ok, parsed: v, close: !ok && Math.abs(v - ans) <= Math.abs(ans) * 0.1 + 0.005 };
   }
 

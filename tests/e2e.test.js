@@ -410,6 +410,28 @@ async function solveCurrent(page, mode) {
   ok(((await page.locator('#print-root').innerText()).match(/問\d+/g) || []).length === 10, '↑ 10問ならそろう');
   await page.evaluate(() => localStorage.removeItem('trade-sim.scenario'));
 
+  /* ---------- 再検品（v2）の指摘 C2：別の自習課題リンク ---------- */
+  section('別の自習課題のリンクを開いたとき');
+  await page.goto(BASE + '#/');
+  await page.evaluate(() => localStorage.removeItem('trade-sim.study'));
+  await page.goto(BASE + '#/study?course=intro&len=15');
+  await page.locator('.study-nav button:has-text("次へ")').click();
+  await page.locator('.choice').first().click(); await page.locator('.choice').nth(3).click();
+  await page.locator('.study-nav button:has-text("次へ")').click();
+  ok(await page.locator('.step-title').innerText() === '表を読む（絶対優位）', '入門15分をステップ3まで進める');
+  await page.goto(BASE + '#/study?course=standard&len=30');
+  ok(/別の自習課題のリンク/.test(await page.locator('.other-task').innerText()), '別のコース・時間のリンク → 「別の課題」と案内');
+  ok(await page.locator('button:has-text("新しい課題を始める（標準コース・約30分）")').count() === 1 && await page.locator('button:has-text("前の続きに戻る（入門コース・約15分）")').count() === 1, '↑ 新しい課題／前の続き を選べる');
+  await page.click('button:has-text("前の続きに戻る")');
+  ok(await page.locator('.step-title').innerText() === '表を読む（絶対優位）', '「前の続き」→ 前の記録が残っていて続きから');
+  await page.goto(BASE + '#/study?course=intro&len=30');
+  ok(await page.locator('.other-task').count() === 1, '同じコースでも時間がちがえば別の課題として案内');
+  await page.click('button:has-text("新しい課題を始める")');
+  ok(/入門コース・のこり約30分/.test(await page.locator('.study-progress').innerText()) && await page.locator('.step-title').innerText() === '今日のゴール', '「新しい課題」→ 入門30分を最初から');
+  await page.goto(BASE + '#/study?course=intro&len=30');
+  ok(await page.locator('.other-task').count() === 0, 'まったく同じリンクを開き直しても「別の課題」とは言わない');
+  await page.evaluate(() => localStorage.removeItem('trade-sim.study'));
+
   /* ---------- スマホ幅 ---------- */
   section('スマホ幅で崩れない');
   const phone = await browser.newPage({ viewport: { width: 375, height: 740 } });

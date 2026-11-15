@@ -166,6 +166,21 @@
           h('button', { type: 'button', class: 'btn btn-outline', on: { click: function () { if (root.confirm('最初からやり直しますか？ 今の進み具合は消えます。')) { ui.store.remove('study'); st = null; chooseCourse(); } } } }, '最初からやり直す')))]);
     }
 
+    /* 別の自習課題のリンクが開かれたとき：新しい課題か、前の続きかを選んでもらう（記録は勝手に消さない） */
+    function askWhichTask(course, len) {
+      ui.clear(main);
+      var steps = stepsFor(st);
+      ui.append(main, [h('div', { class: 'panel resume other-task' },
+        h('p', null, h('strong', null, '先生から、別の自習課題のリンクが開かれました。')),
+        h('p', null, 'この端末には、前の自習（' + COURSE[st.course] + '・約' + st.len + '分／ステップ ' + (st.step + 1) + '「' + steps[st.step].title + '」）の途中の記録があります。どちらを始めますか？'),
+        h('div', { class: 'inline wrap' },
+          h('button', { type: 'button', class: 'btn btn-primary btn-lg', on: { click: function () { st = newState(course, len); save(); show(); } } },
+            '新しい課題を始める（' + COURSE[course] + '・約' + len + '分）'),
+          h('button', { type: 'button', class: 'btn btn-outline', on: { click: show } },
+            '前の続きに戻る（' + COURSE[st.course] + '・約' + st.len + '分）')),
+        h('p', { class: 'muted small' }, '「新しい課題を始める」を選ぶと、前の自習の途中の記録は消えます。迷ったら、先生の指示にしたがってください。'))]);
+    }
+
     /* 各ステップ */
     function show() {
       ui.clear(main);
@@ -474,9 +489,12 @@
       location.hash = '#/results';
     }
 
+    var linkCourse = (params.course === 'intro' || params.course === 'standard') ? params.course : null;
+    var linkLen = params.len === '15' ? 15 : 30;
     if (st && !st.finished && stepsFor(st)[st.step]) {
-      if (params.course && params.course !== st.course) askResume();
-      else if (st.step === 0 && !params.course) show();
+      // リンクのコース・時間が、途中の記録とちがう → 別の課題として扱う
+      if (linkCourse && (linkCourse !== st.course || linkLen !== st.len)) askWhichTask(linkCourse, linkLen);
+      else if (st.step === 0 && !linkCourse) show();
       else askResume();
     } else if (params.course === 'intro' || params.course === 'standard') {
       st = newState(params.course, params.len === '15' ? 15 : 30); save(); show();
