@@ -294,6 +294,26 @@ async function solveCurrent(page, mode) {
   }
   ok(jargon.length === 0, '画面に専門用語・開発用語が残っていない', jargon);
 
+  /* ---------- マニュアル ---------- */
+  section('使い方・マニュアル');
+  await page.goto(BASE + '#/');
+  await page.click('.hero-actions a:has-text("使い方")');
+  await page.waitForSelector('.manual');
+  ok(await page.locator('.tab').count() === 2, '生徒向け・先生向けの2つのタブ');
+  ok(await page.locator('.manual-student .man-step').count() >= 10, '生徒向けてびきの手順を表示', await page.locator('.man-step').count());
+  const imgsOk = await page.$$eval('.manual img', ims => Promise.all(ims.map(im => im.complete ? im : new Promise(r => { im.onload = im.onerror = () => r(im); })))
+    .then(list => list.every(im => im.naturalWidth > 0)));
+  ok(imgsOk, 'マニュアルの画面写真がすべて表示される');
+  await page.click('.tab:has-text("先生向けマニュアル")');
+  ok(/for=teacher/.test(page.url()) && await page.locator('.manual-teacher').count() === 1, '先生向けタブに切りかわる（URLも変わる）');
+  await page.evaluate(() => { window.print = () => {}; });
+  await page.click('button:has-text("このマニュアルを印刷・PDFで保存")');
+  await page.waitForTimeout(500);
+  const ms = await page.locator('#print-root').innerText();
+  ok(/先生向けマニュアル/.test(ms) && /自習課題を配る/.test(ms) && /提出の受け取り方/.test(ms), '印刷用のマニュアルが用意される');
+  await page.goto(BASE + '#/howto?for=student');
+  ok(await page.locator('.manual-student').count() === 1, 'リンク（?for=student）で生徒向けを直接開ける');
+
   /* ---------- スマホ幅 ---------- */
   section('スマホ幅で崩れない');
   const phone = await browser.newPage({ viewport: { width: 375, height: 740 } });

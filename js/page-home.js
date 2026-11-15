@@ -146,7 +146,9 @@
           presetLink('標準5問', '機会費用の計算あり', '#/practice?d=standard&n=5&seed=' + P.newSeed() + '&start=1'),
           presetLink('授業導入5分', '予想→配分→結果を提示', '#/sim?intro=1')),
         h('p', { class: 'small' }, h('strong', null, '生徒への配り方：'), '「リンクをコピー」を押し、Classroomなどの投稿欄に貼り付けて（Ctrl＋V、Macは⌘＋V）配ります。生徒はそのリンクを開くだけで始められます。'),
-        h('p', null, h('a', { class: 'btn btn-outline', href: '#/practice' }, ui.icon('print'), '演習問題をつくる・A4プリントを印刷する')),
+        h('div', { class: 'inline wrap' },
+          h('a', { class: 'btn btn-outline', href: '#/practice' }, ui.icon('print'), '演習問題をつくる・A4プリントを印刷する'),
+          h('a', { class: 'btn btn-outline', href: '#/howto?for=teacher' }, ui.icon('book'), '先生向けマニュアル（印刷できます）')),
         h('p', { class: 'muted small' }, '演習のリンクは、だれが開いても同じ問題が出ます。トップで作った例題（表）そのものをリンクで配る機能は、今後追加する予定です。アカウントやパスワードはなく、生徒の解答が先生に自動で送られることもありません。')));
 
     var foot = h('footer', { class: 'site-foot' },

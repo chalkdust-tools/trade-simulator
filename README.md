@@ -21,6 +21,17 @@
 4. 「Build and deployment」の Source を「Deploy from a branch」にし、Branch を `main`、フォルダを `/ (root)` にして「Save」。
 5. 1〜2分待つと、`https://（ユーザー名）.github.io/trade-simulator/` で開けるようになります。このURLを生徒に配ります。
 
+## 使い方マニュアル
+
+アプリの「使い方」ボタン（`#/howto`）に、**生徒向けてびき**と**先生向けマニュアル**があります。
+それぞれ「印刷・PDFで保存」ボタンで、A4縦の紙やPDFにできます。
+
+マニュアルの画面写真は `img/manual/` にあります。画面を変えたときは、次のコマンドで撮り直せます（簡易サーバーをポート8123で起動しておきます）。
+
+```bash
+node tools/manual-shots.js
+```
+
 ## 手元で試す
 
 `index.html` をダブルクリックしても動きます。
@@ -57,6 +68,9 @@ node tests/e2e.test.js
 | `js/problems.js` | 問題バンク（テンプレート＋検算） |
 | `js/ui.js` `js/editor.js` `js/quiz.js` | 画面の共通部品・例題エディタ・出題とヒント |
 | `js/page-*.js` `js/app.js` | 各画面と画面切り替え |
+| `js/manual.js` | 使い方マニュアル（生徒向け・先生向け）と印刷 |
+| `img/manual/` | マニュアル用の画面写真 |
+| `tools/manual-shots.js` | 画面写真の撮り直し |
 | `tests/` | 計算テスト・ブラウザ操作テスト |
 
 ## 計算モデルと、判定する範囲

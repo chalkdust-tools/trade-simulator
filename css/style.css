@@ -469,3 +469,36 @@ ol.steps { margin: 6px 0; padding-left: 1.5em; }
   .hero-title, .hero-sub { white-space: nowrap; }
 }
 .edit-hint { margin: 6px 0 0; }
+
+/* ---------- マニュアル ---------- */
+.tabs { display: flex; gap: 6px; border-bottom: 2px solid var(--line); margin: 6px 0 14px; flex-wrap: wrap; }
+.tab { min-height: 48px; padding: 8px 22px; border: 1.5px solid var(--line); border-bottom: 0; border-radius: 12px 12px 0 0; background: var(--blue-50); color: var(--navy); font-weight: 800; cursor: pointer; margin-bottom: -2px; }
+.tab.active { background: #fff; border-color: var(--blue); border-bottom: 2px solid #fff; color: var(--blue-d); }
+.man-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 8px; }
+.man-tools p { margin: 0; flex-basis: 100%; }
+.man-steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+.man-step { display: grid; gap: 14px 22px; background: #fff; border: 1.5px solid var(--line); border-radius: var(--radius); padding: 16px 20px; box-shadow: var(--shadow); }
+.man-step.has-img { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); align-items: start; }
+.man-text h3 { display: flex; align-items: center; gap: 10px; margin: 0 0 6px; font-size: 1.15rem; color: var(--navy); line-height: 1.5; }
+.man-text h3 .num { width: 30px; height: 30px; font-size: .95rem; }
+.man-text p { margin: 4px 0; }
+.man-fig { margin: 0; }
+.man-fig img { display: block; width: 100%; height: auto; border: 1.5px solid var(--line); border-radius: 10px; background: #fff; }
+.btn-chip { display: inline-block; padding: 0 10px; margin: 0 2px; border: 1.5px solid var(--line-strong); border-radius: 7px; background: #fff; color: var(--navy); font-weight: 800; font-size: .92em; line-height: 1.7; white-space: nowrap; box-shadow: 0 1px 2px rgba(20, 60, 120, .12); }
+.man-part { margin-bottom: 26px; }
+@media (max-width: 760px) {
+  .man-step.has-img { grid-template-columns: 1fr; }
+  .btn-chip { white-space: normal; }
+}
+/* マニュアルの印刷（A4縦） */
+.manual.sheet .man-h { font-size: 13pt; color: #1f3f75; border-left: 4px solid #1f63c4; padding-left: 8px; margin: 12px 0 6px; }
+.manual.sheet .man-steps { gap: 6px; }
+.manual.sheet .man-step { box-shadow: none; border: 1px solid #bbb; border-radius: 6px; padding: 6px 10px; break-inside: avoid; page-break-inside: avoid; }
+.manual.sheet .man-step.has-img { grid-template-columns: minmax(0, 1fr) 72mm; gap: 6px 12px; }
+.manual.sheet .man-fig img { max-height: 60mm; width: auto; max-width: 100%; border-color: #999; }
+.manual.sheet .man-text h3 { font-size: 11pt; margin-bottom: 2px; }
+.manual.sheet .man-text h3 .num { width: 20px; height: 20px; font-size: 9pt; background: none; color: #1f3f75; border: 1.5px solid #1f3f75; }
+.manual.sheet .man-text p { margin: 1px 0; font-size: 10pt; }
+.manual.sheet .btn-chip { box-shadow: none; border-color: #777; padding: 0 5px; }
+.manual.sheet .man-part { margin-bottom: 8px; }
+@media print { .man-part > h2 { break-after: avoid; page-break-after: avoid; } }
