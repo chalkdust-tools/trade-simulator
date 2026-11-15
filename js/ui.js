@@ -217,18 +217,30 @@
     toastTimer = setTimeout(function () { el.classList.remove('show'); }, 2600);
   }
 
-  function copyText(text) {
+  /**
+   * クリップボードにコピーする。成功したら true、失敗したら false で終わる Promise を返す。
+   * （成功を確かめる前に「コピーしました」と表示しないため）
+   */
+  function copyText(text, opts) {
+    opts = opts || {};
     function fallback() {
-      var ta = h('textarea', { class: 'sr-only' });
+      var ta = h('textarea', { class: 'sr-only', readonly: true });
       ta.value = text;
-      document.body.appendChild(ta); ta.select();
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      try { ta.setSelectionRange(0, text.length); } catch (e) { /* iPad/iPhone の Safari 向け */ }
       var ok = false;
       try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
       document.body.removeChild(ta);
-      toast(ok ? 'コピーしました' : 'コピーできませんでした。手動で選択してください。');
+      return ok;
     }
-    if (navigator.clipboard && root.isSecureContext) navigator.clipboard.writeText(text).then(function () { toast('コピーしました'); }, fallback);
-    else fallback();
+    var p = (navigator.clipboard && root.isSecureContext)
+      ? navigator.clipboard.writeText(text).then(function () { return true; }, function () { return fallback(); })
+      : Promise.resolve(fallback());
+    return p.then(function (ok) {
+      if (!opts.quiet) toast(ok ? 'コピーしました' : 'コピーできませんでした。リンクの欄を長押し（パソコンは選択）してコピーしてください。');
+      return ok;
+    });
   }
 
   /** 印刷用シートを #print-root に入れて印刷 */

@@ -35,7 +35,7 @@
             on: { click: function () { var t = document.getElementById('example'); t.scrollIntoView({ behavior: 'smooth', block: 'start' }); var f = t.querySelector('select'); if (f) f.focus({ preventScroll: true }); } }
           }, ui.icon('book'), '例題から始める'),
           h('a', { class: 'btn btn-outline btn-lg', href: '#/howto' }, ui.icon('help'), '使い方')),
-        h('p', { class: 'hero-note' }, '「はじめる」は、ヒントつきで一人でも進められる自習モード（約15〜35分）です。先生は ', h('a', { href: '#/teacher' }, '課題・プリントをつくる'), ' へ。')),
+        h('p', { class: 'hero-note' }, '「はじめる」は、ヒントつきで一人でも進められる自習モード（約15〜30分）です。先生は ', h('a', { href: '#/teacher' }, '課題・プリントをつくる'), ' へ。')),
       ui.heroSVG());
 
     /* ---- 学習モード ---- */

@@ -147,18 +147,24 @@
       var pair = M.analyzePair(t, 0, 1, 0, 1);
       var idx = pair.bothAbs === null ? 2 : pair.bothAbs;
       var line = function (j) { return o.G[j] + '：' + o.P[0] + ' ' + t[0][j] + '個／' + o.P[1] + ' ' + t[1][j] + '個'; };
+      // 商品ごとの結果を、表の数どおりに説明する（同じ数の商品があれば「同じ」と書く）
+      var judge = function (j) {
+        var w = pair.abs[j === 0 ? 'x' : 'y'];
+        return w === null ? o.G[j] + 'は同じ数で差がない' : o.G[j] + 'は' + o.P[w] + 'が多い';
+      };
+      var why = judge(0) + '、' + judge(1);
       return {
         params: {},
         prompt: '商品を1つずつ比べたとき、両方の商品で絶対優位を持つ（どちらの商品も多く作れる）のはどちらですか。',
-        choices: [o.P[0], o.P[1], 'どちらでもない（多く作れる商品がそれぞれちがう）'], answerIndex: idx,
-        steps: [line(0), line(1), idx === 2 ? '多く作れる人（国）が商品ごとにちがう' : o.P[idx] + 'が両方で多い'],
+        choices: [o.P[0], o.P[1], 'どちらでもない（両方の商品で多く作れる人・国はいない）'], answerIndex: idx,
+        steps: [line(0), line(1), idx === 2 ? why : o.P[idx] + 'が両方で多い'],
         hints: ['まず' + o.G[0] + 'だけ、次に' + o.G[1] + 'だけを比べよう。',
           line(0) + '、' + line(1),
           '両方とも同じ人（国）が多ければ、その人（国）が両方で絶対優位です。'],
         explanation: (idx === 2
-          ? line(0) + '、' + line(1) + '。多く作れる商品がそれぞれちがうので、両方で絶対優位を持つ人（国）はいません。'
+          ? line(0) + '、' + line(1) + '。' + why + 'ので、両方の商品で絶対優位を持つ人（国）はいません。'
           : line(0) + '、' + line(1) + '。どちらも' + o.P[idx] + 'の方が多いので、' + o.P[idx] + 'が両方の商品で絶対優位を持ちます。ただし、これだけでは「比較優位」は決まりません。'),
-        reason: idx === 2 ? '商品ごとに、多く作れる人（国）がちがいます。' : o.P[idx] + 'はどちらの商品も多く作れます。'
+        reason: idx === 2 ? why + 'からです。' : o.P[idx] + 'はどちらの商品も多く作れます。'
       };
     },
     solve: function (p) { var r = naive.both(p.scenario.table); return r === -1 ? 2 : r; }
@@ -609,15 +615,45 @@
     });
   }
 
-  /** 問題セットを生成。作れなかった問題は除外し、その数を返す */
+  /**
+   * 問題セットを生成。
+   * 固定例題（機会費用が同じ表など）で作れない問題があったときは、
+   * まず同じ分野の別の問題、なければほかの分野の問題で補い、指定した問題数にそろえる。
+   * それでも作れなかった数を dropped で返す。
+   */
   function generateSet(opts) {
     var specs = planSet(opts);
-    var problems = [], specsOk = [], dropped = 0;
-    specs.forEach(function (s) {
-      var p = buildProblem(s);
-      if (p) { problems.push(p); specsOk.push(s); } else dropped++;
+    var pool = templatesFor(opts.difficulty, opts.categories);
+    var unusable = {}; // この条件では作れないと分かったテンプレート
+    var picked = [], dropped = 0, seen = {}, catCount = {};
+    // 同じ問題かどうか：問題文と表が同じなら同じ（選択肢の並び順がちがうだけのものも同じとみなす）
+    function key(p) { return p.prompt + '|' + JSON.stringify(p.scenario.table) + '|' + (p.choices || []).slice().sort().join('/'); }
+    specs.forEach(function (s, k) {
+      var p = unusable[s.templateId] ? null : buildProblem(s);
+      if (!p) unusable[s.templateId] = true;
+      if (!p || seen[key(p)]) {
+        p = null;
+        var cat = BY_ID[s.templateId].category;
+        // 代わりの候補：同じ分野 → 問題の少ない分野の順
+        var others = pool.filter(function (t) { return t.category !== cat; })
+          .sort(function (x, y) { return (catCount[x.category] || 0) - (catCount[y.category] || 0); });
+        var alts = pool.filter(function (t) { return t.category === cat; }).concat(others);
+        for (var a = 0; a < alts.length * 3 && !p; a++) {
+          var t = alts[a % alts.length];
+          if (unusable[t.id]) continue;
+          var s2 = { templateId: t.id, seed: mixSeed(s.seed, 900 + k * 31 + a), difficulty: s.difficulty, fixed: s.fixed };
+          var cand = buildProblem(s2);
+          if (!cand) { unusable[t.id] = true; continue; }
+          if (!seen[key(cand)]) { p = cand; s = s2; }
+        }
+        // 同じ問題は出さない。作れなければ、その分は減らして dropped で知らせる
+      }
+      if (p) { seen[key(p)] = true; catCount[p.category] = (catCount[p.category] || 0) + 1; picked.push({ p: p, s: s, k: k }); }
+      else dropped++;
     });
-    return { problems: problems, specs: specsOk, dropped: dropped };
+    // 分野の順（P01→P05）にならべ直す
+    picked.sort(function (x, y) { return x.p.category < y.p.category ? -1 : (x.p.category > y.p.category ? 1 : x.k - y.k); });
+    return { problems: picked.map(function (x) { return x.p; }), specs: picked.map(function (x) { return x.s; }), dropped: dropped };
   }
 
   /** 類題：同じテンプレートで別の数値（固定例題のときは同じ表で別の問い方） */
@@ -646,8 +682,12 @@
     var v = parseAnswer(text);
     if (v === null) return { ok: false, parsed: null };
     var ans = problem.answer.toNumber();
-    var tol = problem.answer.isTerminating() ? 1e-6 : 0.0051;
-    var ok = Math.abs(v - ans) <= tol;
+    // 正解とするもの：①ぴったり同じ（分数・小数）
+    //   ②小数第2位で四捨五入した値（問題文で「小数第2位まで」と許している。例 1/8→0.13、2/3→0.67）
+    //   ③それより細かい近似（例 0.125、0.667）
+    // 切り捨て（1/8→0.12、2/3→0.66）は正解にしない
+    var rounded2 = Number(problem.answer.toDecimalString(2));
+    var ok = Math.abs(v - ans) < 1e-9 || Math.abs(v - rounded2) < 1e-9 || Math.abs(v - ans) < 0.001;
     return { ok: ok, parsed: v, close: !ok && Math.abs(v - ans) <= Math.abs(ans) * 0.1 + 0.005 };
   }
 

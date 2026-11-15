@@ -74,12 +74,19 @@
 
     var head = ui.pageHead('演習問題', [{ text: '演習問題' }], '比較優位・機会費用・分業の問題に挑戦します。まちがえてもヒントが出るので、あわてずに。下で選んで「画面で解く」を押してください。');
     var body = h('div');
+    var shortNote = h('p', { class: 'warn small', 'aria-live': 'polite' });
     ui.append(app, [head, body]);
 
     function buildSet() {
       var o = { difficulty: settings.difficulty, count: settings.count, categories: settings.categories, seed: settings.seed };
       if (settings.source === 'scenario' && fixedOk) o.fixed = { producers: sc.producers, goods: sc.goods, table: sc.table };
-      return P.generateSet(o);
+      var set = P.generateSet(o);
+      // 1つの表から作れる「ちがう問題」が足りないときは、その数で作り、理由を知らせる
+      if (set.dropped > 0 && set.problems.length) {
+        ui.toast('この表から作れるちがう問題は' + set.problems.length + '問でした。' + set.problems.length + '問で作っています。');
+        shortNote.textContent = '※ 選んだ表から作れる「ちがう問題」は' + set.problems.length + '問でした。同じ問題を2回出さないよう、' + set.problems.length + '問で作っています。もっと多く出したいときは「問題ごとにちがう数字」を選んでください。';
+      } else shortNote.textContent = '';
+      return set;
     }
 
     function start() {
@@ -173,7 +180,7 @@
           h('button', { type: 'button', class: 'btn btn-outline', on: { click: function () { var st = buildSet(); ui.printSheet(problemSheet(st.problems, settings)); } } }, ui.icon('print'), '問題プリントを印刷'),
           h('button', { type: 'button', class: 'btn btn-outline', on: { click: function () { var st = buildSet(); ui.printSheet(answerSheet(st.problems, settings)); } } }, ui.icon('print'), '解答・解説を印刷')),
         h('p', { class: 'muted small' }, 'プリントは、「画面で解く」と同じ問題です。問題と解答は別々の紙になります。印刷画面で送り先を「PDFに保存」にすると、PDFファイルとして保存できます。'),
-        linkBox);
+        shortNote, linkBox);
       body.appendChild(panel);
       refreshLink();
     }
@@ -184,8 +191,13 @@
     }
     if (params.start === '1') {
       var cur = validQuiz(ui.store.get('quiz', null));
-      // 同じ課題リンクを開き直した場合は続きから
-      if (cur && cur.settings && cur.settings.seed === settings.seed && cur.settings.difficulty === settings.difficulty && cur.index < cur.specs.length) solve(cur);
+      // まったく同じ課題リンク（難易度・問題数・問題番号・出題範囲がすべて同じ）を開き直した場合だけ続きから。
+      // 1つでもちがえば別の課題なので、新しく始める。
+      var same = function (a, b) {
+        return a.seed === b.seed && a.difficulty === b.difficulty && a.count === b.count && (a.source || 'random') === 'random' &&
+          (a.categories || []).slice().sort().join(',') === (b.categories || []).slice().sort().join(',');
+      };
+      if (cur && cur.settings && same(cur.settings, settings) && cur.index < cur.specs.length) solve(cur);
       else start();
     } else setup();
     return { title: '演習問題' };

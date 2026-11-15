@@ -67,11 +67,22 @@
     while (d % 5 === 0) d /= 5;
     return d === 1;
   };
-  /** 表示用：整数→"3"、割り切れる→"0.5"、割り切れない→"2/3（約0.67）" */
+  /**
+   * 表示用（丸めた数を、丸めていないように見せない）
+   *   整数 → "3"、小数第2位までで割り切れる → "0.5" "8.65"
+   *   分母が小さく、それ以上の桁で割り切れる → "1/8（0.125）"
+   *   分母が小さく、割り切れない → "2/3（約0.67）"
+   *   分母が大きい → "約0.74"
+   */
   Frac.prototype.toDisplay = function () {
     if (this.d === 1) return String(this.n);
-    if (this.isTerminating() && this.d <= 100) return this.toDecimalString(2);
-    return this.toFracString() + '（約' + this.toDecimalString(2) + '）';
+    var exact2 = this.isTerminating() && Math.abs(Number(this.toDecimalString(2)) - this.toNumber()) < 1e-12;
+    if (exact2) return this.toDecimalString(2);
+    if (this.d <= 20) {
+      if (this.isTerminating()) return this.toFracString() + '（' + this.toDecimalString(6) + '）';
+      return this.toFracString() + '（約' + this.toDecimalString(2) + '）';
+    }
+    return '約' + this.toDecimalString(2);
   };
   Frac.prototype.toString = function () { return this.toFracString(); };
 

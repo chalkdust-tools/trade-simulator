@@ -20,7 +20,7 @@
     var inp = h('input', { type: 'text', class: 'input link-input', readonly: true, value: url, 'aria-label': label,
       on: { focus: function () { inp.select(); } } });
     return h('div', { class: 'link-row' }, inp,
-      h('button', { type: 'button', class: 'btn btn-outline btn-sm', on: { click: function () { ui.copyText(url); } } }, ui.icon('copy'), 'もう一度コピー'));
+      h('button', { type: 'button', class: 'btn btn-outline btn-sm', on: { click: function () { ui.copyText(url); } } }, ui.icon('copy'), 'コピー'));
   }
 
   function render(app, params) {
@@ -44,12 +44,25 @@
     function makeStudy(len) {
       var hash = '#/study?course=' + level + '&len=' + len;
       var url = absUrl(hash);
-      ui.copyText(url);
       var title = '自習課題（' + LEVEL[level].name + 'コース・約' + len + '分）';
+      // コピーの成否が分かってから見出しを決める
+      var head = h('p', { class: 'result-head' }, h('strong', null, title + 'のリンクを用意しています…'));
+      var howTo = h('p');
+      ui.copyText(url, { quiet: true }).then(function (ok) {
+        ui.clear(head); ui.clear(howTo);
+        if (ok) {
+          ui.append(head, [ui.icon('check', 'ok-icon'), h('strong', null, title + 'のリンクをコピーしました。')]);
+          ui.append(howTo, ['Classroomなどの投稿欄に貼り付けて配ってください（パソコンは ', h('strong', null, 'Ctrl＋V'), '、Macは ', h('strong', null, '⌘＋V'), '、iPadは入力欄を長押しして「ペースト」）。生徒はリンクを開くだけで始められます。']);
+        } else {
+          head.classList.add('warn-text');
+          ui.append(head, [h('strong', null, title + 'のリンクを作りました。'), '（自動コピーはこの端末ではできませんでした）']);
+          ui.append(howTo, ['下のリンクの欄を長押し（パソコンはクリック）して全部選び、「コピー」してください。そのあとClassroomなどに貼り付けて配ります。']);
+        }
+      });
       ui.clear(result);
       ui.append(result, h('div', { class: 'result-card' },
-        h('p', { class: 'result-head' }, ui.icon('check', 'ok-icon'), h('strong', null, title + 'のリンクをコピーしました。')),
-        h('p', null, 'Classroomなどの投稿欄をクリックして、', h('strong', null, 'Ctrl＋V（Macは⌘＋V）'), 'で貼り付けて配ってください。生徒はリンクを開くだけで始められます。'),
+        head,
+        howTo,
         linkBox(url, title + 'のリンク'),
         h('div', { class: 'inline wrap' },
           h('a', { class: 'btn btn-outline btn-sm', href: hash, target: '_blank', rel: 'noopener' }, '開いて確かめる（新しいタブ）'),

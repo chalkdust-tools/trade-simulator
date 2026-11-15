@@ -354,6 +354,62 @@ async function solveCurrent(page, mode) {
   await page.goto(BASE + '#/howto?for=student');
   ok(await page.locator('.manual-student').count() === 1, 'リンク（?for=student）で生徒向けを直接開ける');
 
+  /* ---------- ChatGPT検品の指摘に対する修正の確認 ---------- */
+  section('検品指摘の修正（所要時間・課題の再開・コピー失敗・問題数）');
+  // B1：目安時間の合計が「約15分／約30分」と一致
+  const minuteSums = await page.evaluate(() => [['intro', 15], ['standard', 15], ['intro', 30], ['standard', 30]].map(([c, l]) =>
+    TS.studyPlan.stepsFor({ course: c, len: l }).reduce((a, s) => a + s.min, 0) + '/' + l));
+  ok(minuteSums.every(x => x.split('/')[0] === x.split('/')[1]), '自習の目安時間の合計が15分・30分と一致', minuteSums);
+  for (const [c, l] of [['intro', 15], ['standard', 30]]) {
+    await page.goto(BASE + '#/');
+    await page.evaluate(() => localStorage.removeItem('trade-sim.study'));
+    await page.goto(BASE + '#/study?course=' + c + '&len=' + l);
+    ok(new RegExp('のこり約' + l + '分').test(await page.locator('.study-progress').innerText()), '↑ ' + c + '・' + l + '分版の開始時「のこり約' + l + '分」');
+  }
+  // B2：同じ問題番号でも、問題数がちがう課題リンクは別の課題として始まる
+  await page.evaluate(() => localStorage.removeItem('trade-sim.quiz'));
+  await page.goto(BASE + '#/practice?d=intro&n=5&seed=12345&start=1');
+  await page.waitForSelector('.qview');
+  await solveCurrent(page); await page.locator('.quiz .next-row .btn-primary').click();
+  ok(/問題 2 \/ 5/.test(await page.locator('.q-num').innerText()), '5問の課題を2問目まで進める');
+  await page.goto(BASE + '#/practice?d=intro&n=10&seed=12345&start=1');
+  await page.waitForSelector('.qview');
+  ok(/問題 1 \/ 10/.test(await page.locator('.q-num').innerText()), '問題数がちがうリンク → 新しい10問の課題として始まる', await page.locator('.q-num').innerText());
+  await solveCurrent(page); await page.locator('.quiz .next-row .btn-primary').click();
+  await page.goto(BASE + '#/practice?d=intro&n=10&seed=12345&start=1');
+  await page.waitForSelector('.qview');
+  ok(/問題 2 \/ 10/.test(await page.locator('.q-num').innerText()), 'まったく同じリンクを開き直す → 続きから', await page.locator('.q-num').innerText());
+  // B3：コピーできない端末では「コピーしました」と言わない
+  const noclip = await browser.newContext();
+  await noclip.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', { get() { return { writeText() { return Promise.reject(new Error('denied')); } }; } });
+    document.execCommand = () => false;
+  });
+  const nc = await noclip.newPage();
+  await nc.goto(BASE + '#/teacher');
+  await nc.click('button:has-text("自習課題をつくる")');
+  await nc.waitForFunction(() => !/用意しています/.test(document.querySelector('.result-head').innerText));
+  const headTxt = await nc.locator('.result-head').innerText();
+  ok(!/コピーしました/.test(headTxt) && /できませんでした/.test(headTxt), 'コピー失敗時は「コピーしました」と表示しない', headTxt);
+  ok(/長押し/.test(await nc.locator('.result-card').innerText()) && /#\/study\?course=standard&len=30$/.test(await nc.locator('.link-input').inputValue()), '↑ 手でコピーする方法とリンクを表示');
+  await noclip.close();
+  const okHead = await (async () => { await page.goto(BASE + '#/teacher'); await page.click('button:has-text("自習課題をつくる")'); await page.waitForFunction(() => !/用意しています/.test(document.querySelector('.result-head').innerText)); return page.locator('.result-head').innerText(); })();
+  ok(/コピーしました/.test(okHead), 'コピー成功時は「コピーしました」', okHead);
+  // A2：固定例題で作れる数が足りないときは、理由を表示
+  await page.goto(BASE + '#/');
+  await page.evaluate(() => localStorage.setItem('trade-sim.scenario', JSON.stringify({ title: '同率', description: '', kind: 'countries', tableType: 'output', producers: ['A国', 'B国'], goods: ['商品A', '商品B'], table: [[10, 5], [6, 3]], labor: [1, 1] })));
+  await page.goto(BASE + '#/practice');
+  await page.locator('button:has-text("破棄する")').click().catch(() => {});
+  await page.evaluate(() => { window.print = () => {}; });
+  await page.click('label[for=diff-intro]'); await page.click('label[for=count-20]'); await page.click('label[for=src-scenario]');
+  await page.click('button:has-text("問題プリントを印刷")');
+  const pq = ((await page.locator('#print-root').innerText()).match(/問\d+/g) || []).length;
+  ok(pq === 13 && /13問でした/.test(await page.locator('.setup .warn').innerText()), '同率の表で入門20問 → 作れる13問で作り、理由を表示', pq);
+  await page.click('label[for=count-10]');
+  await page.click('button:has-text("問題プリントを印刷")');
+  ok(((await page.locator('#print-root').innerText()).match(/問\d+/g) || []).length === 10, '↑ 10問ならそろう');
+  await page.evaluate(() => localStorage.removeItem('trade-sim.scenario'));
+
   /* ---------- スマホ幅 ---------- */
   section('スマホ幅で崩れない');
   const phone = await browser.newPage({ viewport: { width: 375, height: 740 } });

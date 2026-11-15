@@ -12,17 +12,20 @@
 
   function drillCount(st) { return st.len === 15 ? 3 : (st.course === 'intro' ? 6 : 8); }
 
+  /*
+   * 各ステップの目安（分）。合計が選択画面の「約15分」「約30分」とぴったり合うようにしてある。
+   * ※実際に生徒が使ってかかった時間で検証したものではなく、目安。
+   */
+  var MINUTES = {
+    s15: [1, 1, 2, 2, 1, 3, 3, 2],          // 演習3問 → 合計15分
+    intro30: [2, 3, 3, 4, 3, 5, 6, 4],      // 演習6問 → 合計30分
+    standard30: [2, 2, 3, 5, 3, 4, 8, 3]    // 演習8問（機会費用は計算あり）→ 合計30分
+  };
   function stepsFor(st) {
-    return [
-      { id: 'intro', title: '今日のゴール', min: 2 },
-      { id: 'predict', title: '予想する', min: 3 },
-      { id: 'abs', title: '表を読む（絶対優位）', min: 3 },
-      { id: 'oc', title: '機会費用を考える', min: st.len === 15 ? 3 : 5 },
-      { id: 'comp', title: '比較優位を決める', min: 3 },
-      { id: 'exp', title: '配分を動かして確かめる', min: st.len === 15 ? 3 : 6 },
-      { id: 'drill', title: '演習問題', min: Math.round(drillCount(st) * 1.5) },
-      { id: 'wrap', title: 'まとめ', min: st.len === 15 ? 2 : 5 }
-    ];
+    var m = st.len === 15 ? MINUTES.s15 : MINUTES[st.course + '30'];
+    var defs = [['intro', '今日のゴール'], ['predict', '予想する'], ['abs', '表を読む（絶対優位）'], ['oc', '機会費用を考える'],
+      ['comp', '比較優位を決める'], ['exp', '配分を動かして確かめる'], ['drill', '演習問題'], ['wrap', 'まとめ']];
+    return defs.map(function (d, k) { return { id: d[0], title: d[1], min: m[k] }; });
   }
 
   var SC = M.defaultScenario();
@@ -483,4 +486,5 @@
 
   TS.pages = TS.pages || {};
   TS.pages.study = render;
+  TS.studyPlan = { stepsFor: stepsFor, drillCount: drillCount };
 })(window);

@@ -53,6 +53,12 @@ node tests/calc.test.js
 計算テストです（仕様書10章の回帰テスト、問題バンクの大量生成と検算）。
 
 ```bash
+node --test tests/regression.test.js
+```
+
+外部レビュー（ChatGPT）の検品で見つかったケースの回帰テストです。
+
+```bash
 node tests/e2e.test.js
 ```
 
