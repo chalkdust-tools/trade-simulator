@@ -34,7 +34,7 @@
     var pairSel = { p: 0, q: 1, x: 0, y: 1 };
 
     var head = ui.pageHead('シミュレーション', [{ text: 'シミュレーション' }],
-      '数字を動かして、分業と生産量の変化を試します。');
+      'だれが、どの商品に、どれだけ時間を使うかを変えて、全体で作れる量がどう変わるかを試します。');
     var descP = h('p', { class: 'scenario-desc' });
     var tableBox = h('div');
     var allocBox = h('div', { class: 'alloc-grid' });
@@ -61,9 +61,9 @@
       }
     });
     var editDetails = h('details', { class: 'more' },
-      h('summary', null, '表を編集する（自由実験）'),
+      h('summary', null, '表の数字や名前を変える'),
       h('div', { class: 'more-body' }, editor.el,
-        h('p', { class: 'muted small' }, '変更はすぐ反映され、この端末に保存されます。トップの「例題設定」と同じ内容です。')));
+        h('p', { class: 'muted small' }, '書きかえると、すぐ下の計算に反映されます。トップページの「例題設定」と同じものです。')));
 
     /* ---- ② 配分 ---- */
     var controls = []; // controls[i] = [{...} per good] or single for n=2
@@ -75,7 +75,7 @@
         var card = h('div', { class: 'alloc-card' }, h('h3', null, p));
         var out = h('p', { class: 'alloc-out' });
         if (n === 2) {
-          var ctl = shareControl(sc.goods[0] + 'に使う時間の割合', shares[i][0], function (v) {
+          var ctl = shareControl(sc.goods[0] + 'に使う時間（残りは' + sc.goods[1] + 'に使う）', shares[i][0], function (v) {
             shares[i] = [v, 100 - v];
             ctl.out.textContent = v + '%';
             split.textContent = sc.goods[0] + ' ' + v + '% ／ ' + sc.goods[1] + ' ' + (100 - v) + '%';
@@ -95,7 +95,7 @@
             row.push(c);
             card.appendChild(c.el);
           });
-          card.appendChild(h('p', { class: 'muted small' }, '1つを動かすと、残りの割合が自動で調整されて合計100%になります。'));
+          card.appendChild(h('p', { class: 'muted small' }, '1つを動かすと、ほかの商品の時間が自動で調整されて、合計がいつも100%になります。'));
           controls.push(row);
         }
         card.appendChild(out);
@@ -105,10 +105,10 @@
       updateOutputs();
 
       ui.clear(allocBtns);
-      allocBtns.appendChild(h('button', { type: 'button', class: 'btn btn-outline', on: { click: function () { setAll(base); } } }, ui.icon('reset'), '基準（均等）に戻す'));
+      allocBtns.appendChild(h('button', { type: 'button', class: 'btn btn-outline', on: { click: function () { setAll(base); } } }, ui.icon('reset'), 'はじめ（均等）に戻す'));
       if (sc.producers.length === 2 && sc.goods.length === 2) {
         var pr = M.analyzePair(sc.table, 0, 1, 0, 1);
-        if (!pr.tie) allocBtns.appendChild(h('button', { type: 'button', class: 'btn btn-outline', on: { click: function () { setAll(M.specializationShares(sc, pr)); } } }, '比較優位どおりに完全分業'));
+        if (!pr.tie) allocBtns.appendChild(h('button', { type: 'button', class: 'btn btn-outline', on: { click: function () { setAll(M.specializationShares(sc, pr)); } } }, '比較優位どおりに分業する（それぞれ1つだけ作る）'));
       }
     }
     function setAll(sh) {
@@ -135,8 +135,8 @@
       var max = 0;
       b.concat(c).forEach(function (f) { max = Math.max(max, f.toNumber()); });
       var tbl = h('table', { class: 'data-table result-table' },
-        h('caption', { class: 'sr-only' }, '基準の配分と今の配分の総生産量'),
-        h('thead', null, h('tr', null, h('th', { scope: 'col' }, '商品'), h('th', { scope: 'col' }, '基準（均等）'), h('th', { scope: 'col' }, '今の配分'), h('th', { scope: 'col' }, '差'))),
+        h('caption', { class: 'sr-only' }, '均等に分けたときと今の、全体で作れる量'),
+        h('thead', null, h('tr', null, h('th', { scope: 'col' }, '商品'), h('th', { scope: 'col' }, '均等に分けたとき'), h('th', { scope: 'col' }, '今'), h('th', { scope: 'col' }, 'ちがい'))),
         h('tbody', null, sc.goods.map(function (g, j) {
           var r = cmp[j];
           return h('tr', null, h('th', { scope: 'row' }, g), h('td', null, ui.fmt(r.base) + '個'), h('td', { class: 'strong' }, ui.fmt(r.cur) + '個'),
@@ -151,16 +151,16 @@
       var ups = [], downs = [];
       cmp.forEach(function (r, j) { if (r.sign > 0) ups.push(sc.goods[j]); if (r.sign < 0) downs.push(sc.goods[j]); });
       var summary;
-      if (!ups.length && !downs.length) summary = '基準の配分と同じ合計です。スライダーを動かしてみましょう。';
-      else if (ups.length && !downs.length) summary = '基準と比べて、' + ups.join('・') + 'がふえ、へった商品はありません。';
-      else if (!ups.length) summary = '基準と比べて、' + downs.join('・') + 'がへりました。';
-      else summary = '基準と比べて、' + ups.join('・') + 'はふえ、' + downs.join('・') + 'はへりました。';
+      if (!ups.length && !downs.length) summary = '均等に分けたときと同じです。②のつまみを左右に動かしてみましょう。';
+      else if (ups.length && !downs.length) summary = '均等に分けたときと比べて、' + ups.join('・') + 'がふえました。へった商品はありません。';
+      else if (!ups.length) summary = '均等に分けたときと比べて、' + downs.join('・') + 'がへりました。';
+      else summary = '均等に分けたときと比べて、' + ups.join('・') + 'はふえ、' + downs.join('・') + 'はへりました。';
       ui.append(resultBox, [
         h('p', { class: 'result-summary' }, summary),
         h('div', { class: 'table-wrap' }, tbl),
-        h('div', { class: 'legend' }, h('span', { class: 'key base' }), '基準（均等）', h('span', { class: 'key cur' }), '今の配分'),
+        h('div', { class: 'legend' }, h('span', { class: 'key base' }), '均等に分けたとき', h('span', { class: 'key cur' }), '今'),
         bars,
-        h('p', { class: 'muted small' }, 'どちらの配分が「よい」かは、どの商品をいくつ必要とするか（何を基準に比べるか）で変わります。ここでは合計の増減だけを示しています。')
+        h('p', { class: 'muted small' }, 'どちらが「よい」かは、どの商品がいくつ必要かによって変わります。ここでは、ふえたか・へったかだけを示しています。')
       ]);
     }
 
@@ -175,10 +175,10 @@
       var big = sc.producers.length > 2 || sc.goods.length > 2;
       if (big) {
         analysisBox.appendChild(h('div', { class: 'note' },
-          h('p', null, '3か国以上・3財以上では、全体で「どこが何をつくるか」を1つに決めるには、何を最大にするか（どの商品がいくつ必要か等）の条件が必要です。このアプリでは自動判定せず、2つずつ選んで比べます。')));
+          h('p', null, '国や商品が3つ以上あるときは、「どこが何を作るのが一番よいか」の答えは、どの商品をどれだけ必要とするかで変わります。そのため、このアプリでは自動判定せず、2つの国と2つの商品を選んで比べます。')));
         analysisBox.appendChild(h('div', { class: 'pair-pick' },
-          select('比べる1つ目', sc.producers, pairSel.p, function (v) { pairSel.p = v; renderAnalysis(); }, 'pp'),
-          select('2つ目', sc.producers, pairSel.q, function (v) { pairSel.q = v; renderAnalysis(); }, 'pq'),
+          select('比べる国（人）1', sc.producers, pairSel.p, function (v) { pairSel.p = v; renderAnalysis(); }, 'pp'),
+          select('比べる国（人）2', sc.producers, pairSel.q, function (v) { pairSel.q = v; renderAnalysis(); }, 'pq'),
           select('商品1', sc.goods, pairSel.x, function (v) { pairSel.x = v; renderAnalysis(); }, 'px'),
           select('商品2', sc.goods, pairSel.y, function (v) { pairSel.y = v; renderAnalysis(); }, 'py')));
         if (pairSel.p === pairSel.q || pairSel.x === pairSel.y) {
@@ -197,8 +197,8 @@
       var ocT = h('table', { class: 'data-table oc-table' },
         h('caption', { class: 'sr-only' }, '機会費用（1個つくるとき、あきらめる量）'),
         h('thead', null, h('tr', null, h('th', { scope: 'col' }, ''),
-          h('th', { scope: 'col' }, G[x] + 'を1個つくると、' + G[y] + 'を…'),
-          h('th', { scope: 'col' }, G[y] + 'を1個つくると、' + G[x] + 'を…'))),
+          h('th', { scope: 'col' }, G[x] + 'を1個つくると、' + G[y] + 'を何個あきらめる？'),
+          h('th', { scope: 'col' }, G[y] + 'を1個つくると、' + G[x] + 'を何個あきらめる？'))),
         h('tbody', null, [p, q].map(function (i) {
           var other = i === p ? q : p;
           function cell(key, g1, g2) {
@@ -222,7 +222,7 @@
           (A.comp.x === A.bothAbs ? G[x] : G[y]) + 'だけにあります。「多く作れる」と「比較優位」は別のものです。');
       }
       ui.append(analysisBox, [
-        h('h3', { class: 'mini-title' }, '絶対優位（同じ労働量で多く作れるのは？）'),
+        h('h3', { class: 'mini-title' }, '絶対優位（同じ時間で、より多く作れるのは？）'),
         h('ul', { class: 'plain' }, absLine(x, 'x'), absLine(y, 'y')),
         h('h3', { class: 'mini-title' }, '機会費用（1個つくるとき、あきらめる量）'),
         h('div', { class: 'table-wrap' }, ocT),
@@ -231,7 +231,7 @@
           h('div', null,
             h('p', null, P[p] + 'は同じ時間で' + G[x] + 'を' + t[p][x] + '個、または' + G[y] + 'を' + t[p][y] + '個つくれます。つまり' + G[x] + 'を1個ふやすには、' + G[y] + 'を ' + t[p][y] + '÷' + t[p][x] + '＝' + ui.fmt(A.oc[p].x) + '個 あきらめる必要があります。これが機会費用です。'),
             h('p', null, 'あきらめる量が小さい＝ほかの商品と比べて相対的に得意、ということです。だから「多く作れるか（絶対優位）」ではなく、機会費用の大小で比較優位を決めます。'))),
-        h('p', { class: 'muted small' }, 'モデルの前提：生産性は一定、労働は自由に分けられる、規模に関して収穫一定。数値は架空です。')
+        h('p', { class: 'muted small' }, 'このアプリは「作れる量は使った時間に比例する」という単純なルールで計算しています（実際の経済はもっと複雑です）。数字は架空です。')
       ]);
     }
 
@@ -241,23 +241,23 @@
       introBanner = h('div', { class: 'intro-banner' },
         h('h2', null, '授業導入（5分）'),
         h('ol', null,
-          h('li', null, h('strong', null, '予想：'), '「表の左側の人は両方たくさん作れる。それでも分担する意味はある？」と問いかけ、手をあげて予想。'),
-          h('li', null, h('strong', null, '操作：'), '②のスライダーを動かし、基準（50%ずつ）より両方の合計がふえる配分を探す。'),
-          h('li', null, h('strong', null, '確認：'), '③で増減を見て、「完全分業」ボタンでは減る商品もあることを確認。④の機会費用で理由を説明。')),
+          h('li', null, h('strong', null, '予想：'), '「' + sc.producers[0] + 'は両方たくさん作れる。それでも分担する意味はある？」と問いかけ、手をあげて予想。（例題によって問いかけは変えてください）'),
+          h('li', null, h('strong', null, '操作：'), '②のつまみを動かし、均等（50%ずつ）のときより、両方の合計がふえる時間の使い方を探す。'),
+          h('li', null, h('strong', null, '確認：'), '③でふえた・へったを見て、「比較優位どおりに分業する」ボタンでは、へる商品もあることを確認。④の機会費用で理由を説明。')),
         h('p', { class: 'muted small' }, '例題はトップの「例題設定」で変えられます。'));
     }
     var guide = h('ol', { class: 'step-guide no-print', 'aria-label': 'この画面の進め方' },
-      [['s1', '表を読む'], ['s2', '配分を動かす'], ['s3', '結果を比べる'], ['s4', '機会費用を見る']].map(function (s, k) {
+      [['s1', '表を読む'], ['s2', '時間の使い方を変える'], ['s3', '作れる量を比べる'], ['s4', '機会費用を見る']].map(function (s, k) {
         return h('li', null, h('a', { href: '#' + s[0], on: { click: function (e) { e.preventDefault(); document.getElementById(s[0]).scrollIntoView({ behavior: 'smooth' }); } } }, h('span', { class: 'num' }, String(k + 1)), s[1]));
       }));
 
     renderTable(); renderAlloc(); renderResult(); renderAnalysis();
     ui.append(app, [head, introBanner, guide,
       ui.section('① 表を読む', h('div', { class: 'panel' }, descP, tableBox, editDetails), { id: 's1' }),
-      ui.section('② 配分を動かす', h('div', { class: 'panel' },
-        h('p', null, '各' + (sc.kind === 'countries' ? '国' : '人') + 'が、使える時間のうち何%をどの商品に使うかを決めます。'),
+      ui.section('② 時間の使い方を変える（配分）', h('div', { class: 'panel' },
+        h('p', null, 'つまみを左右に動かすか、「−」「＋」ボタンを押して、それぞれが時間の何%をどの商品に使うかを決めます。'),
         allocBox, allocBtns), { id: 's2' }),
-      ui.section('③ 結果を比べる', h('div', { class: 'panel' }, resultBox), { id: 's3' }),
+      ui.section('③ 全体で作れる量を比べる', h('div', { class: 'panel' }, resultBox), { id: 's3' }),
       ui.section('④ 機会費用と比較優位', h('div', { class: 'panel' }, analysisBox), { id: 's4' }),
       h('div', { class: 'next-row no-print' },
         h('a', { class: 'btn btn-outline', href: '#/' }, ui.icon('back'), 'ホームへ'),

@@ -27,7 +27,7 @@
         h('h1', null, '演習プリント（問題）'),
         h('p', { class: 'sheet-meta' }, P.DIFFICULTIES[s.difficulty] + '・' + problems.length + '問　問題番号 ' + s.seed + '　' + ui.todayStr()),
         h('p', { class: 'sheet-name' }, '　　年　　組　　番　名前＿＿＿＿＿＿＿＿＿＿＿＿＿＿')),
-      h('p', { class: 'sheet-note' }, '表の数値は「同じ労働量をすべてその商品に使ったときに作れる量（個）」です。数値は架空のものです。'),
+      h('p', { class: 'sheet-note' }, '表の数字は、それぞれが時間（労働量）をすべてその商品に使ったときに作れる量（個）です。数字は架空のものです。'),
       problems.map(function (p, k) {
         return h('section', { class: 'sheet-q' },
           h('h2', null, '問' + (k + 1) + '　', h('span', { class: 'sheet-cat' }, '［' + p.categoryName + '］')),
@@ -67,7 +67,7 @@
     var sc = ui.getScenario();
     var fixedOk = P.fixedScenarioUsable(sc);
 
-    var head = ui.pageHead('演習問題', [{ text: '演習問題' }], '比較優位・機会費用・分業の問題に挑戦します。まちがえてもヒントが出るので、あわてずに。');
+    var head = ui.pageHead('演習問題', [{ text: '演習問題' }], '比較優位・機会費用・分業の問題に挑戦します。まちがえてもヒントが出るので、あわてずに。下で選んで「画面で解く」を押してください。');
     var body = h('div');
     ui.append(app, [head, body]);
 
@@ -121,7 +121,7 @@
             h('button', { type: 'button', class: 'btn btn-ghost', on: { click: function () { ui.store.remove('quiz'); setup(); } } }, '破棄する'))));
       }
       var seedInp = h('input', { type: 'text', inputmode: 'numeric', class: 'input seed-input', id: 'seed', value: String(settings.seed), maxlength: '9',
-        on: { input: function () { var v = seedInp.value.replace(/\D/g, ''); if (v) { settings.seed = Number(v); refreshLink(); } } } });
+        on: { input: function () { var v = TS.model.toHalfWidth(seedInp.value).replace(/\D/g, '').slice(0, 9); if (v) { settings.seed = Number(v); refreshLink(); } } } });
       var linkInp = h('input', { type: 'text', class: 'input', readonly: true, 'aria-label': 'この問題セットのリンク' });
       var linkBox = h('div', { class: 'field' });
       function refreshLink() {
@@ -129,10 +129,10 @@
         if (settings.source === 'random') {
           var cats = settings.categories.length === Object.keys(P.CATEGORIES).length ? '' : '&c=' + settings.categories.join('.');
           linkInp.value = location.href.split('#')[0] + '#/practice?d=' + settings.difficulty + '&n=' + settings.count + '&seed=' + settings.seed + cats + '&start=1';
-          ui.append(linkBox, [h('label', null, 'この問題セットのリンク（生徒に配ると同じ問題が出ます）'),
+          ui.append(linkBox, [h('label', null, 'この問題のリンク（コピーしてClassroomなどに貼ると、生徒も同じ問題を解けます）'),
             h('div', { class: 'inline' }, linkInp, h('button', { type: 'button', class: 'btn btn-outline btn-sm', on: { click: function () { ui.copyText(linkInp.value); } } }, ui.icon('copy'), 'コピー'))]);
         } else {
-          linkBox.appendChild(h('p', { class: 'muted small' }, '例題の表を使った問題セットは、今はリンクで共有できません（第2段階で対応予定）。プリントで配布してください。'));
+          linkBox.appendChild(h('p', { class: 'muted small' }, 'トップで作った例題の表を使う問題は、今はリンクで配れません（今後追加予定）。プリントで配ってください。'));
         }
       }
 
@@ -145,29 +145,29 @@
             if (!settings.categories.length) { cb.checked = true; settings.categories = [c]; ui.toast('少なくとも1つ選んでください'); }
             refreshLink();
           } } });
-        catBox.appendChild(h('label', { class: 'check', for: id }, cb, h('span', null, c + ' ' + P.CATEGORIES[c].name)));
+        catBox.appendChild(h('label', { class: 'check', for: id }, cb, h('span', null, P.CATEGORIES[c].name)));
       });
 
       var panel = h('div', { class: 'panel setup' },
         radioGroup('diff', '難易度', [
           { value: 'intro', label: '入門', sub: '選択式中心・計算少なめ' },
           { value: 'standard', label: '標準', sub: '機会費用・合計の計算あり' },
-          { value: 'adv', label: '発展', sub: '交換比率など（第3段階で追加予定）', disabled: true }
+          { value: 'adv', label: '発展', sub: '交換比率など（今後追加予定）', disabled: true }
         ], settings.difficulty, function (v) { settings.difficulty = v; refreshLink(); }),
         radioGroup('count', '問題数', COUNTS.map(function (n) { return { value: n, label: n + '問', sub: '約' + Math.round(n * 1.8) + '分' }; }),
           settings.count, function (v) { settings.count = Number(v); refreshLink(); }),
         catBox,
-        radioGroup('src', '表の数値', [
-          { value: 'random', label: '問題ごとにちがう数値', sub: '自動生成・検算ずみ' },
-          { value: 'scenario', label: '例題設定の表を使う', sub: fixedOk ? '「' + (sc.title || '現在の例題') + '」' : '2×2の例題のときだけ使えます', disabled: !fixedOk }
+        radioGroup('src', '表の数字', [
+          { value: 'random', label: '問題ごとにちがう数字', sub: '答えはアプリが自動で確かめています' },
+          { value: 'scenario', label: 'トップで作った例題の表を使う', sub: fixedOk ? '「' + (sc.title || '現在の例題') + '」' : '国・商品が2つずつの例題のときだけ使えます', disabled: !fixedOk }
         ], settings.source, function (v) { settings.source = v; refreshLink(); }),
-        h('div', { class: 'field' }, h('label', { for: 'seed' }, '問題番号（同じ番号なら同じ問題になります）'),
+        h('div', { class: 'field' }, h('label', { for: 'seed' }, '問題番号（ふつうはこのままでOK。同じ番号なら同じ問題になります）'),
           h('div', { class: 'inline' }, seedInp, h('button', { type: 'button', class: 'btn btn-outline btn-sm', on: { click: function () { settings.seed = P.newSeed(); seedInp.value = String(settings.seed); refreshLink(); } } }, '新しい番号'))),
         h('div', { class: 'inline wrap actions' },
           h('button', { type: 'button', class: 'btn btn-primary btn-lg', on: { click: start } }, ui.icon('play'), '画面で解く'),
           h('button', { type: 'button', class: 'btn btn-outline', on: { click: function () { var st = buildSet(); ui.printSheet(problemSheet(st.problems, settings)); } } }, ui.icon('print'), '問題プリントを印刷'),
           h('button', { type: 'button', class: 'btn btn-outline', on: { click: function () { var st = buildSet(); ui.printSheet(answerSheet(st.problems, settings)); } } }, ui.icon('print'), '解答・解説を印刷')),
-        h('p', { class: 'muted small' }, '印刷画面で「PDFに保存」を選ぶと、PDFとして保存できます。問題と解答は別々の紙になります。'),
+        h('p', { class: 'muted small' }, 'プリントは、「画面で解く」と同じ問題です。問題と解答は別々の紙になります。印刷画面で送り先を「PDFに保存」にすると、PDFファイルとして保存できます。'),
         linkBox);
       body.appendChild(panel);
       refreshLink();

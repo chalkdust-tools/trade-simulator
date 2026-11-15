@@ -34,7 +34,7 @@
 
     if (opts.showTable !== false && problem.scenario) {
       el.appendChild(ui.dataTable(problem.scenario, { caption: '問題の表：同じ労働量で作れる量（個）' }));
-      el.appendChild(h('p', { class: 'muted small table-note' }, '表は「同じ労働量をすべてその商品に使ったときに作れる量」です（架空の数値）。'));
+      el.appendChild(h('p', { class: 'muted small table-note' }, '表の数字は、それぞれが時間をすべてその商品に使ったときに作れる量です（数字は架空）。'));
     }
     el.appendChild(h('p', { class: 'prompt' }, problem.prompt));
 
@@ -48,12 +48,24 @@
       });
     } else {
       var nid = 'ans-' + Math.random().toString(36).slice(2, 8);
-      numInput = h('input', { type: 'text', inputmode: 'decimal', id: nid, class: 'input num-input', autocomplete: 'off', placeholder: '例：0.5 または 1/2',
-        on: { keydown: function (e) { if (e.key === 'Enter') { e.preventDefault(); answerNumber(); } } } });
+      numInput = h('input', { type: 'text', inputmode: 'decimal', id: nid, class: 'input num-input', autocomplete: 'off', placeholder: '例：0.5 や 2/3',
+        on: { keydown: function (e) {
+          // 日本語入力の変換確定のEnterでは送信しない
+          if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); answerNumber(); }
+        } } });
       checkBtn = h('button', { type: 'button', class: 'btn btn-primary', on: { click: answerNumber } }, '答え合わせ');
-      answerArea = h('div', { class: 'num-answer' },
-        h('label', { for: nid, class: 'sr-only' }, '答え'),
-        numInput, h('span', { class: 'unit' }, problem.unit || ''), checkBtn);
+      // スマホ・タブレットの数字キーボードには「/」がないので、ボタンで入れられるようにする
+      var slashBtn = h('button', { type: 'button', class: 'btn btn-outline btn-sm', 'aria-label': '分数の線「/」を入れる', on: { click: function () {
+        var p = numInput.selectionStart === null ? numInput.value.length : numInput.selectionStart;
+        numInput.value = numInput.value.slice(0, p) + '/' + numInput.value.slice(numInput.selectionEnd === null ? p : numInput.selectionEnd);
+        numInput.focus(); numInput.setSelectionRange(p + 1, p + 1);
+      } } }, '分数の「/」');
+      answerArea = h('div', null,
+        h('div', { class: 'num-answer' },
+          h('label', { for: nid, class: 'sr-only' }, '答え'),
+          h('span', { class: 'num-field' }, numInput, h('span', { class: 'unit' }, problem.unit || '')),
+          slashBtn, checkBtn),
+        h('p', { class: 'muted small num-help' }, '小数（0.5）でも分数（1/2）でも答えられます。スマホ・タブレットで「/」が打てないときは「分数の「/」」ボタンを押してください。'));
     }
     el.appendChild(answerArea);
 
@@ -87,7 +99,8 @@
       while (hintsShown < rec.wrong && hintsShown < problem.hints.length) showHint(false);
       ui.clear(feedback);
       feedback.className = 'feedback wrong';
-      feedback.appendChild(h('p', null, h('strong', null, extraMsg || 'ちがうようです。'), 'ヒント' + Math.min(rec.wrong, problem.hints.length) + 'を読んで、もう一度考えてみよう。'));
+      feedback.appendChild(h('p', null, h('strong', null, extraMsg || 'ちがうようです。'), '上のヒントを読んで、もう一度考えてみよう。'));
+      setTimeout(showFeedback, 30);
     }
 
     function answerChoice(k, btn) {
@@ -102,18 +115,22 @@
       var r = P.checkNumber(problem, numInput.value);
       if (r.parsed === null) {
         ui.clear(feedback); feedback.className = 'feedback info';
-        feedback.appendChild(h('p', null, '数として読めませんでした。「0.5」や「1/2」のように入力してください。'));
+        feedback.appendChild(h('p', null, '数字として読めませんでした。「0.5」や「1/2」のように、数字だけを入力してください（まちがいには数えません）。'));
         numInput.focus();
         return;
       }
       rec.attempts++;
       if (r.ok) { numInput.classList.add('ok'); correct(); }
-      else { numInput.select(); wrong(r.close ? 'おしい！ 少しずれています。' : null); }
+      else {
+        numInput.select();
+        var near = r.close ? (problem.answer.isTerminating() ? 'おしい！ 少しずれています。' : 'おしい！ 割り切れないときは、分数のまま（例：2/3）か、小数第2位まで（例：0.67）で答えよう。') : null;
+        wrong(near);
+      }
     }
 
     function lockInputs() {
       choiceBtns.forEach(function (b, k) { b.disabled = true; if (k === problem.answerIndex) b.classList.add('correct'); });
-      if (numInput) { numInput.disabled = true; checkBtn.disabled = true; }
+      if (numInput) { numInput.disabled = true; Array.prototype.forEach.call(answerArea.querySelectorAll('button'), function (b) { b.disabled = true; }); }
       hintBtn.disabled = true;
       giveUpBtn.classList.add('hidden');
     }
@@ -147,12 +164,13 @@
       feedback.className = 'feedback reveal';
       var ans = isChoice ? (KANA[problem.answerIndex] + '「' + problem.choices[problem.answerIndex] + '」') : (problem.answer.toDisplay() + (problem.unit || ''));
       feedback.appendChild(h('p', null, h('strong', null, '答え：' + ans)));
-      feedback.appendChild(h('p', { class: 'small' }, '解説を読んで、なぜそうなるか確認しよう。類題でもう一度ためすこともできます。'));
+      feedback.appendChild(h('p', { class: 'small' }, '下の解説を読んで、なぜそうなるか確かめよう。そのあと「にた問題でもう一度」で、数字を変えた問題にもう一度挑戦できます。'));
       after.appendChild(stepsBlock(true));
       done();
     }
 
-    function done() { if (opts.onResolved) opts.onResolved(rec); }
+    function showFeedback() { try { feedback.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (e) { /* 古いブラウザ */ } }
+    function done() { if (opts.onResolved) opts.onResolved(rec); setTimeout(showFeedback, 30); }
 
     this.el = el;
     this.record = rec;
@@ -189,7 +207,7 @@
       var meta = h('div', { class: 'q-meta' },
         h('span', { class: 'q-num' }, '問題 ' + n + ' / ' + total),
         h('span', { class: 'tag cat' }, prob.categoryName || ''),
-        state.specs[state.index].similar ? h('span', { class: 'tag sim' }, '類題') : null,
+        state.specs[state.index].similar ? h('span', { class: 'tag sim' }, 'にた問題') : null,
         prob.minutes ? h('span', { class: 'muted small' }, '目安 ' + prob.minutes + '分') : null);
       var actions = h('div', { class: 'next-row' });
       var qv = new QuestionView(prob, {
@@ -207,7 +225,7 @@
                   state.index++; save(); render();
                 }
               }
-            }, ui.icon('reset'), '類題でもう一度'));
+            }, ui.icon('reset'), 'にた問題でもう一度'));
           }
           var last = state.index === state.specs.length - 1;
           var nextBtn = h('button', { type: 'button', class: 'btn btn-primary', on: { click: function () { state.index++; save(); render(); } } },

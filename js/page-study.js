@@ -90,7 +90,7 @@
   ];
 
   var TERMS = [
-    ['絶対優位', '同じ労働量で、相手より多く作れること。'],
+    ['絶対優位', '同じ時間（同じ労働量）で、相手より多く作れること。'],
     ['機会費用', 'ある商品を1個つくるときに、あきらめる別の商品の量。'],
     ['比較優位', '機会費用が相手より小さいこと（相対的に得意）。両方で絶対優位でも、比較優位は片方だけ。'],
     ['国際分業', '国どうしで得意な（比較優位のある）ものを分担して生産すること。']
@@ -146,7 +146,7 @@
           h('div', { class: 'mode-grid two' },
             courseCard('intro', '入門コース', '計算は少なめ。選んで答える問題が中心です。', 'purple'),
             courseCard('standard', '標準コース', '機会費用を自分で計算します。', 'blue'))),
-        h('p', { class: 'muted small' }, '進み具合はこの端末のブラウザに保存されます（別の端末には引き継がれません）。')
+        h('p', { class: 'muted small' }, '進み具合は、このパソコン（タブレット）に自動で保存されます。途中でやめても、同じ端末なら続きから始められます（別の端末には引き継がれません）。')
       ]);
     }
 
@@ -344,7 +344,7 @@
           on: { input: function () { shares[i] = [Number(r.value), 100 - Number(r.value)]; update(); } } });
         ranges.push({ r: r, out: out });
         return h('div', { class: 'alloc-card' }, h('h3', null, SC.producers[i]),
-          h('label', { for: id, class: 'share-label' }, '商品Aに使う時間の割合（残りは商品B）'),
+          h('label', { for: id, class: 'share-label' }, '商品Aに使う時間（残りは商品Bに使う）'),
           h('div', { class: 'share-row' }, r, out));
       }
       var resT = h('div');
@@ -353,7 +353,7 @@
         var cur = M.production(SC, shares).total, cmp = M.compareTotals(base, cur);
         ui.clear(resT);
         resT.appendChild(h('div', { class: 'table-wrap' }, h('table', { class: 'data-table result-table' },
-          h('thead', null, h('tr', null, h('th', null, '商品'), h('th', null, '基準（50%ずつ）'), h('th', null, '今'), h('th', null, '差'))),
+          h('thead', null, h('tr', null, h('th', null, '商品'), h('th', null, '50%ずつのとき'), h('th', null, '今'), h('th', null, 'ちがい'))),
           h('tbody', null, SC.goods.map(function (g, j) {
             return h('tr', null, h('th', { scope: 'row' }, g), h('td', null, ui.fmt(base[j]) + '個'), h('td', { class: 'strong' }, ui.fmt(cur[j]) + '個'),
               h('td', { class: cmp[j].sign > 0 ? 'up' : (cmp[j].sign < 0 ? 'down' : '') }, ui.signText(cmp[j].sign, cmp[j].delta)));
@@ -365,8 +365,8 @@
         st.exp.shares = shares; save();
         ui.clear(status);
         if (isSpec) status.appendChild(card('info', [h('p', null, h('strong', null, '完全分業：'), '商品Aは10個にふえましたが、商品Bは4.5個→4個に', h('strong', null, 'へりました'), '。完全分業がいつも両方の商品をふやすとはかぎりません。')]));
-        else if (both) status.appendChild(card('ok', [h('p', null, ui.icon('check', 'ok-icon'), h('strong', null, 'できました！ '), '基準より、商品Aも商品Bもふえています。比較優位にそって時間を寄せると、2人の合計を両方ふやせることがあります。')]));
-        else status.appendChild(h('p', { class: 'muted' }, '目標：商品Aと商品Bの「差」を、両方とも「＋」にしよう。'));
+        else if (both) status.appendChild(card('ok', [h('p', null, ui.icon('check', 'ok-icon'), h('strong', null, 'できました！ '), '50%ずつのときより、商品Aも商品Bもふえています。比較優位にそって時間を寄せると、2人の合計を両方ふやせることがあります。')]));
+        else status.appendChild(h('p', { class: 'muted' }, '目標：表の「ちがい」の列を、商品Aも商品Bも「＋（ふえた）」にしよう。'));
         drawSummary();
         setReady(true);
       }
@@ -384,7 +384,7 @@
         }
       }
       ui.append(b, [
-        h('p', null, '2人とも時間を50%ずつ使うと、合計は商品A 8個・商品B 4.5個です（基準）。2人の時間の使い方を変えて、', h('strong', null, '両方の合計を基準より多くできるか'), '試そう。'),
+        h('p', null, '2人とも時間を50%ずつ使うと、2人の合計は商品A 8個・商品B 4.5個です。つまみを左右に動かして時間の使い方を変え、', h('strong', null, '商品Aも商品Bも、この数より多くできるか'), '試そう。'),
         h('div', { class: 'alloc-grid' }, slider(0), slider(1)),
         h('div', { class: 'inline wrap' },
           h('button', { type: 'button', class: 'btn btn-outline', on: { click: function () { shares = [[50, 50], [50, 50]]; update(); } } }, ui.icon('reset'), '50%ずつに戻す'),
@@ -403,7 +403,7 @@
         st.quiz = { specs: set.specs, index: 0, records: [] };
         save();
       }
-      b.appendChild(h('p', null, '今日の内容を、ちがう数字の表で練習します。全' + st.quiz.specs.length + '問（類題を選ぶとふえます）。'));
+      b.appendChild(h('p', null, '今日の内容を、ちがう数字の表で練習します。全' + st.quiz.specs.length + '問（「にた問題でもう一度」を選ぶと、そのぶんふえます）。'));
       var box = h('div'); b.appendChild(box);
       new TS.QuizRunner(box, {
         state: st.quiz, finishLabel: 'まとめへ', scrollTop: false,

@@ -49,16 +49,18 @@
       type: 'button', class: 'btn btn-primary',
       on: { click: function () { var s = editor.get(); if (s) { ui.setScenario(s); location.hash = '#/sim'; } } }
     }, ui.icon('play'), 'この設定で始める');
+    var startHint = h('p', { class: 'small start-hint', 'aria-live': 'polite' });
     var side = h('div', { class: 'ed-side' },
       startBtn,
       h('button', {
         type: 'button', class: 'btn btn-outline',
         on: { click: function () { editor.load(M.defaultScenario()); metaRefresh(); ui.toast('初期値（AさんとBさん）に戻しました'); } }
-      }, ui.icon('reset'), '初期値に戻す'));
+      }, ui.icon('reset'), '初期値に戻す'),
+      startHint);
     var editor = new TS.ScenarioEditor(sc, {
       layout: 'home', side: side,
       onChange: function (s) { ui.setScenario(s); },
-      onValidity: function (ok) { startBtn.disabled = !ok; }
+      onValidity: function (ok) { startBtn.disabled = !ok; startHint.textContent = ok ? 'シミュレーションの画面に進みます。' : '表の赤い欄（または下の説明）を直すと押せるようになります。'; }
     });
 
     // 詳細設定（プリセット・タイトル・保存）
@@ -101,19 +103,19 @@
     renderSaved();
 
     var details = h('details', { class: 'more' },
-      h('summary', null, '詳細設定を開く（プリセット・タイトル・保存）'),
+      h('summary', null, '詳細設定を開く（用意された例題・タイトル・保存）'),
       h('div', { class: 'more-body' },
         h('div', { class: 'more-grid' },
-          h('div', { class: 'field' }, h('label', { for: 'ex-preset' }, 'プリセットを読み込む'),
+          h('div', { class: 'field' }, h('label', { for: 'ex-preset' }, '用意された例題から選ぶ'),
             h('div', { class: 'inline' }, presetSel,
               h('button', { type: 'button', class: 'btn btn-outline btn-sm', on: { click: function () { var p = M.PRESETS.filter(function (x) { return x.id === presetSel.value; })[0]; editor.load(p.make()); metaRefresh(); ui.toast('「' + p.name + '」を読み込みました'); } } }, '読み込む'))),
           h('div', { class: 'field' }, h('label', { for: 'ex-title' }, '例題タイトル'), titleInp),
           h('div', { class: 'field wide' }, h('label', { for: 'ex-desc' }, '状況説明（生徒に見せる文）'), descInp)),
         h('div', { class: 'inline' },
           h('button', { type: 'button', class: 'btn btn-outline btn-sm', on: { click: function () { var s = editor.get(); if (s) saveScenario(s); else ui.toast('入力にまちがいがあるため保存できません'); } } }, 'この例題を保存'),
-          h('span', { class: 'muted small' }, '保存はこの端末のブラウザ内だけです。')),
+          h('span', { class: 'muted small' }, 'このパソコン（タブレット）の中にだけ保存されます。')),
         h('h3', { class: 'mini-title' }, '保存した例題'), savedList,
-        h('p', { class: 'muted small' }, '数値は「同じ労働量をすべてその商品に使ったときに作れる量」です。必要労働時間の表（1個つくるのに何時間かかるか）、ファイル書き出し・共有リンクは第2段階で追加予定です。')));
+        h('p', { class: 'muted small' }, '表の数字は「その国（人）が、時間をすべてその商品に使ったときに作れる量」です。「1個つくるのに何時間かかるか」の表や、作った例題をリンク・ファイルで配る機能は、今後追加する予定です。')));
 
     var example = ui.section('例題設定', h('div', null, h('div', { class: 'panel' }, editor.el), details), { id: 'example' });
 
@@ -130,7 +132,10 @@
 
     /* ---- 教師向け ---- */
     function presetLink(label, sub, href) {
-      return h('a', { class: 'quick', href: href }, h('strong', null, label), h('span', null, sub));
+      return h('div', { class: 'quick' }, h('strong', null, label), h('span', null, sub),
+        h('div', { class: 'quick-actions' },
+          h('a', { class: 'btn btn-sm btn-outline', href: href }, '開く'),
+          h('button', { type: 'button', class: 'btn btn-sm btn-ghost', on: { click: function () { ui.copyText(location.href.split('#')[0] + href); } } }, ui.icon('copy'), 'リンクをコピー')));
     }
     var teacher = h('details', { class: 'more teacher', id: 'teacher' },
       h('summary', null, '教師向け設定を開く（ワンクリック課題・プリント）'),
@@ -140,8 +145,9 @@
           presetLink('入門10問', '選択式中心・ヒントつき', '#/practice?d=intro&n=10&seed=' + P.newSeed() + '&start=1'),
           presetLink('標準5問', '機会費用の計算あり', '#/practice?d=standard&n=5&seed=' + P.newSeed() + '&start=1'),
           presetLink('授業導入5分', '予想→配分→結果を提示', '#/sim?intro=1')),
-        h('p', null, h('a', { href: '#/practice?teacher=1' }, '演習問題の作成・A4プリント（問題と解答を別々に印刷）へ')),
-        h('p', { class: 'muted small' }, '上のリンクは、そのままURLを生徒に配れます（同じ問題番号なら同じ問題が出ます）。例題の表そのものをURLで共有する機能・JSON書き出しは第2段階で追加予定です。アカウントやパスワードはなく、生徒の解答が先生に自動送信されることもありません。')));
+        h('p', { class: 'small' }, h('strong', null, '生徒への配り方：'), '「リンクをコピー」を押し、Classroomなどの投稿欄に貼り付けて（Ctrl＋V、Macは⌘＋V）配ります。生徒はそのリンクを開くだけで始められます。'),
+        h('p', null, h('a', { class: 'btn btn-outline', href: '#/practice' }, ui.icon('print'), '演習問題をつくる・A4プリントを印刷する')),
+        h('p', { class: 'muted small' }, '演習のリンクは、だれが開いても同じ問題が出ます。トップで作った例題（表）そのものをリンクで配る機能は、今後追加する予定です。アカウントやパスワードはなく、生徒の解答が先生に自動で送られることもありません。')));
 
     var foot = h('footer', { class: 'site-foot' },
       h('p', null, '表の数値は学習用の架空のものです。学習記録はこの端末のブラウザにだけ保存され、別の端末には引き継がれません。'),

@@ -34,7 +34,7 @@
   function defaultScenario() {
     return {
       title: 'AさんとBさんの分業',
-      description: 'AさんとBさんは、同じ時間（労働量1）で商品A・商品Bを作れます。数値は架空のものです。',
+      description: 'AさんとBさんは、1日で商品Aと商品Bを作れます。表は、1日をすべてその商品に使ったときに作れる数です。数値は架空のものです。',
       kind: 'people',
       tableType: 'output',
       producers: ['Aさん', 'Bさん'],

@@ -237,9 +237,10 @@
     clear(rootEl);
     append(rootEl, nodes);
     document.body.classList.add('print-sheet');
+    // iPad/iPhone の Safari は print() がすぐ戻るので、時間で戻さず「印刷が終わったとき」か「画面を移ったとき」に戻す
     var done = function () { document.body.classList.remove('print-sheet'); root.removeEventListener('afterprint', done); };
     root.addEventListener('afterprint', done);
-    setTimeout(function () { root.print(); setTimeout(done, 500); }, 50);
+    setTimeout(function () { root.print(); }, 50);
   }
   /** 今の画面を印刷 */
   function printPage() { document.body.classList.remove('print-sheet'); root.print(); }

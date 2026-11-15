@@ -30,6 +30,7 @@
     var r = parseHash();
     var name = ROUTES[r.path] || 'home';
     var app = document.getElementById('app');
+    document.body.classList.remove('print-sheet');
     ui.clear(app);
     app.className = 'page page-' + name;
     var info;
@@ -49,5 +50,10 @@
   }
 
   root.addEventListener('hashchange', route);
-  document.addEventListener('DOMContentLoaded', route);
+  document.addEventListener('DOMContentLoaded', function () {
+    // 「本文へスキップ」はハッシュを変えずに本文へ移動（画面切り替えに使うハッシュを壊さない）
+    var skip = document.querySelector('.skip');
+    if (skip) skip.addEventListener('click', function (e) { e.preventDefault(); var a = document.getElementById('app'); a.focus(); a.scrollIntoView(); });
+    route();
+  });
 })(window);

@@ -134,7 +134,7 @@ async function solveCurrent(page, mode) {
   await setRange(page, '#sh-1', 10);
   rt = await resultText();
   ok(/8\.6個 ＋0\.6（ふえた）/.test(rt) && /4\.6個 ＋0\.1（ふえた）/.test(rt), 'Aさん80%・Bさん10%：8.6個・4.6個、両方「＋」', rt);
-  await page.click('button:has-text("比較優位どおりに完全分業")');
+  await page.click('button:has-text("比較優位どおりに分業する")');
   rt = await resultText();
   ok(/10個 ＋2（ふえた）/.test(rt) && /4個 −0\.5（へった）/.test(rt), '完全分業：商品A 10個（＋2）、商品B 4個（−0.5 へった）', rt);
   const oc = (await page.locator('.oc-table').innerText()).replace(/\s+/g, ' ');
@@ -230,8 +230,8 @@ async function solveCurrent(page, mode) {
     await solveCurrent(page);
     const qNum = await page.locator('.q-num').innerText();
     if (guard === 2) { // 類題
-      const sim = page.locator('button:has-text("類題でもう一度")');
-      if (await sim.count()) { await sim.click(); ok(await page.locator('.tag.sim').count() === 1, '類題でもう一度 → 類題が追加される'); continue; }
+      const sim = page.locator('button:has-text("にた問題でもう一度")');
+      if (await sim.count()) { await sim.click(); ok(await page.locator('.tag.sim').count() === 1, 'にた問題でもう一度 → 問題が追加される'); continue; }
     }
     await page.locator('.quiz .next-row .btn-primary').click();
   }
@@ -256,6 +256,43 @@ async function solveCurrent(page, mode) {
   sheet = await page.locator('#print-root').innerText();
   ok(/演習プリント（解答・解説）/.test(sheet) && (sheet.match(/答え：/g) || []).length === 5, '解答プリント：5問ぶんの答えと解説');
   if (SHOTS) { await page.evaluate(() => document.body.classList.add('print-sheet')); await page.pdf({ path: SHOTS + 'sheet-answers.pdf', format: 'A4' }); }
+
+
+  /* ---------- 今回直した不具合の再発防止 ---------- */
+  section('入力まわりの不具合修正');
+  await page.goto(BASE + '#/practice?d=standard&n=3&seed=777&start=1');
+  await page.waitForSelector('.qview');
+  // 数値問題が出るまで進める
+  let g2 = 0;
+  while (!(await page.locator('.num-input').count()) && g2++ < 10) {
+    await solveCurrent(page); await page.locator('.quiz .next-row .btn-primary').click();
+    if (await page.locator('.page-results').count()) { await page.goto(BASE + '#/practice?d=standard&n=10&seed=778&start=1'); await page.waitForSelector('.qview'); }
+  }
+  ok(await page.locator('.num-input').count() === 1, '数値入力の問題を表示');
+  await page.locator('.num-input').fill('0');
+  await page.$eval('.num-input', el => el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, keyCode: 229, bubbles: true })));
+  ok(await page.locator('.feedback.wrong, .feedback.right, .feedback.reveal').count() === 0, '日本語入力の確定Enterでは採点しない');
+  await page.locator('.num-input').fill('2');
+  await page.click('button:has-text(\"分数の「/」\")');
+  ok(await page.locator('.num-input').inputValue() === '2/', '「/」ボタンで分数の線を入れられる');
+  await page.goto(BASE + '#/practice');
+  await page.locator('button:has-text(\"破棄する\")').click().catch(() => {});
+  await page.fill('#seed', '１２３４５');
+  ok(/seed=12345&/.test(await page.locator('.field input[readonly]').inputValue()), '問題番号に全角数字を入れても使える');
+  await page.goto(BASE + '#/sim');
+  await page.focus('.skip'); await page.keyboard.press('Enter');
+  ok(/#\/sim$/.test(page.url()) && await page.locator('.page-sim').count() === 1, '「本文へスキップ」で画面が変わらない');
+  await page.goto(BASE + '#/');
+  await page.click('#teacher summary');
+  ok(await page.locator('.quick button:has-text(\"リンクをコピー\")').count() === 4, '先生向け課題に「リンクをコピー」ボタン');
+  const jargon = [];
+  for (const r of ['#/', '#/sim', '#/practice', '#/study', '#/howto']) {
+    await page.goto(BASE + r); await page.waitForTimeout(100);
+    await page.$$eval('details', ds => ds.forEach(d => d.open = true));
+    const txt = await page.evaluate(() => document.getElementById('app').innerText);
+    for (const w of ['JSON', 'localStorage', 'プリセット', '検算', 'シード', '基準（均等）', '類題', 'P01']) if (txt.includes(w)) jargon.push(r + ':' + w);
+  }
+  ok(jargon.length === 0, '画面に専門用語・開発用語が残っていない', jargon);
 
   /* ---------- スマホ幅 ---------- */
   section('スマホ幅で崩れない');

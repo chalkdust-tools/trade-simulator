@@ -110,10 +110,10 @@
         h('div', { class: 'size-row' },
           sizeSelect('国・生産者の数', 'people', draft.producers.length, function (m) { resize(m, draft.goods.length); }),
           sizeSelect('生産物の数', 'cube', draft.goods.length, function (n) { resize(draft.producers.length, n); })),
-        nameRow(draft.kind === 'countries' ? '国名' : '国・生産者名', 'pencil', draft.producers, 'producers'),
+        nameRow('国・人の名前', 'pencil', draft.producers, 'producers'),
         nameRow('商品名', 'cube', draft.goods, 'goods'));
       var preview = h('div', { class: 'ed-preview' },
-        h('div', { class: 'preview-label' }, h('strong', null, '入力イメージ'), h('span', null, '（同じ労働量で作れる量の例）')),
+        h('div', { class: 'preview-label' }, h('strong', null, '入力イメージ'), h('span', null, '（同じ時間で作れる量の例）')),
         tableEditor(), h('p', { class: 'muted small edit-hint' }, '表の数字をタップすると書きかえられます。'), errBox);
       el.appendChild(form);
       if (opts.layout === 'home') el.appendChild(h('div', { class: 'ed-divider', 'aria-hidden': 'true' }));
