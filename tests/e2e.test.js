@@ -283,10 +283,50 @@ async function solveCurrent(page, mode) {
   await page.focus('.skip'); await page.keyboard.press('Enter');
   ok(/#\/sim$/.test(page.url()) && await page.locator('.page-sim').count() === 1, '「本文へスキップ」で画面が変わらない');
   await page.goto(BASE + '#/');
-  await page.click('#teacher summary');
-  ok(await page.locator('.quick button:has-text(\"リンクをコピー\")').count() === 4, '先生向け課題に「リンクをコピー」ボタン');
+
+  /* ---------- 先生用：課題・プリントをつくる ---------- */
+  section('先生用：課題・プリントをつくる（難易度＋ボタン1つ）');
+  await page.goto(BASE + '#/');
+  ok(await page.locator('#teacher a:has-text("課題・プリントをつくる")').isVisible(), 'トップに「課題・プリントをつくる」が折りたたまれずに見える');
+  await page.click('.usage-bar');
+  await page.waitForSelector('.page-teacher');
+  ok(true, '「授業での使い方」の帯から先生用ページへ');
+  await ctx.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.click('.level-btn:has-text("入門")');
+  ok(await page.locator('.level-btn.on').innerText().then(t => /入門/.test(t)), '難易度「入門」を選べる');
+  await page.click('button:has-text("自習課題をつくる")');
+  const studyLink = await page.locator('.link-input').inputValue();
+  ok(/#\/study\?course=intro&len=30$/.test(studyLink), 'ボタン1回で自習課題のリンク（入門・30分）', studyLink);
+  const clip = await page.evaluate(() => navigator.clipboard.readText().catch(() => ''));
+  ok(clip === studyLink, '↑ リンクが自動でコピーされている', clip);
+  await page.click('button:has-text("短い版（約15分）にする")');
+  ok(/len=15$/.test(await page.locator('.link-input').inputValue()), '短い版（15分）に切りかえられる');
+  // 配られたリンクを開くと、そのコースからすぐ始まる
+  const p2 = await ctx.newPage();
+  await p2.goto(studyLink.replace(/^.*#/, BASE + '#'));
+  await p2.evaluate(() => localStorage.removeItem('trade-sim.study'));
+  await p2.reload();
+  ok(/入門コース/.test(await p2.locator('.study-progress').innerText()), '↑ そのリンクを開くと入門コースがすぐ始まる');
+  await p2.close();
+  await page.click('.level-btn:has-text("標準")');
+  await page.click('button:has-text("演習プリントをつくる")');
+  ok(/演習プリント（標準・10問）を作りました/.test(await page.locator('.result-card').innerText()), 'ボタン1回で演習プリント（標準・10問）');
+  await page.evaluate(() => { window.print = () => {}; });
+  await page.click('.result-card button:has-text("問題プリントを印刷")');
+  let ts = await page.locator('#print-root').innerText();
+  ok((ts.match(/問\d+/g) || []).length === 10 && !/答え：/.test(ts), '↑ 問題プリント10問（答えなし）');
+  const seedShown = (await page.locator('.result-head').innerText()).match(/問題番号 (\d+)/)[1];
+  ok(ts.includes('問題番号 ' + seedShown), '↑ プリントと画面の問題番号が一致');
+  await page.click('.result-card button:has-text("解答・解説を印刷")');
+  ts = await page.locator('#print-root').innerText();
+  ok((ts.match(/答え：/g) || []).length === 10, '↑ 解答・解説10問');
+  await page.click('.result-card button:has-text("20問")');
+  ok(/標準・20問/.test(await page.locator('.result-card').innerText()) && (await page.locator('.result-head').innerText()).includes(seedShown), '問題数を20問に変えられる（同じ問題番号）');
+  await page.click('.result-card button:has-text("リンクをコピー")');
+  const clip2 = await page.evaluate(() => navigator.clipboard.readText().catch(() => ''));
+  ok(new RegExp('#/practice\\?d=standard&n=20&seed=' + seedShown + '&start=1$').test(clip2), '同じ問題を画面で解くリンクをコピー', clip2);
   const jargon = [];
-  for (const r of ['#/', '#/sim', '#/practice', '#/study', '#/howto']) {
+  for (const r of ['#/', '#/sim', '#/practice', '#/study', '#/howto', '#/teacher']) {
     await page.goto(BASE + r); await page.waitForTimeout(100);
     await page.$$eval('details', ds => ds.forEach(d => d.open = true));
     const txt = await page.evaluate(() => document.getElementById('app').innerText);
@@ -310,7 +350,7 @@ async function solveCurrent(page, mode) {
   await page.click('button:has-text("このマニュアルを印刷・PDFで保存")');
   await page.waitForTimeout(500);
   const ms = await page.locator('#print-root').innerText();
-  ok(/先生向けマニュアル/.test(ms) && /自習課題を配る/.test(ms) && /提出の受け取り方/.test(ms), '印刷用のマニュアルが用意される');
+  ok(/先生向けマニュアル/.test(ms) && /自習課題・演習プリントをつくる/.test(ms) && /提出の受け取り方/.test(ms), '印刷用のマニュアルが用意される');
   await page.goto(BASE + '#/howto?for=student');
   ok(await page.locator('.manual-student').count() === 1, 'リンク（?for=student）で生徒向けを直接開ける');
 
@@ -318,7 +358,7 @@ async function solveCurrent(page, mode) {
   section('スマホ幅で崩れない');
   const phone = await browser.newPage({ viewport: { width: 375, height: 740 } });
   phone.on('pageerror', e => errors.push('PAGEERROR(phone) ' + e.message));
-  for (const r of ['#/', '#/sim', '#/practice', '#/study', '#/results', '#/howto']) {
+  for (const r of ['#/', '#/sim', '#/practice', '#/study', '#/results', '#/howto', '#/teacher']) {
     await phone.goto(BASE + r);
     await phone.waitForTimeout(150);
     const over = await phone.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);

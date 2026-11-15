@@ -35,7 +35,7 @@
             on: { click: function () { var t = document.getElementById('example'); t.scrollIntoView({ behavior: 'smooth', block: 'start' }); var f = t.querySelector('select'); if (f) f.focus({ preventScroll: true }); } }
           }, ui.icon('book'), '例題から始める'),
           h('a', { class: 'btn btn-outline btn-lg', href: '#/howto' }, ui.icon('help'), '使い方')),
-        h('p', { class: 'hero-note' }, '「はじめる」は、ヒントつきで一人でも進められる自習モード（約15〜35分）です。')),
+        h('p', { class: 'hero-note' }, '「はじめる」は、ヒントつきで一人でも進められる自習モード（約15〜35分）です。先生は ', h('a', { href: '#/teacher' }, '課題・プリントをつくる'), ' へ。')),
       ui.heroSVG());
 
     /* ---- 学習モード ---- */
@@ -125,31 +125,19 @@
       featureCard('green', 'calc', '機会費用を計算する'),
       featureCard('purple', 'doc', '演習問題を自動で作る')));
 
-    var usage = h('a', { class: 'usage-bar', href: '#/howto' },
+    var usage = h('a', { class: 'usage-bar', href: '#/teacher' },
       h('span', { class: 'usage-head' }, ui.icon('teacher', 'usage-icon'), h('strong', null, '授業での使い方')),
       h('span', { class: 'usage-text' }, '導入5分の提示、個人演習、自習課題づくりに使えます。'),
       ui.icon('chevron', 'mode-chev'));
 
-    /* ---- 教師向け ---- */
-    function presetLink(label, sub, href) {
-      return h('div', { class: 'quick' }, h('strong', null, label), h('span', null, sub),
-        h('div', { class: 'quick-actions' },
-          h('a', { class: 'btn btn-sm btn-outline', href: href }, '開く'),
-          h('button', { type: 'button', class: 'btn btn-sm btn-ghost', on: { click: function () { ui.copyText(location.href.split('#')[0] + href); } } }, ui.icon('copy'), 'リンクをコピー')));
-    }
-    var teacher = h('details', { class: 'more teacher', id: 'teacher' },
-      h('summary', null, '教師向け設定を開く（ワンクリック課題・プリント）'),
-      h('div', { class: 'more-body' },
-        h('div', { class: 'quick-grid' },
-          presetLink('おまかせ自習30分', '標準コース・演習8問', '#/study?course=standard&len=30'),
-          presetLink('入門10問', '選択式中心・ヒントつき', '#/practice?d=intro&n=10&seed=' + P.newSeed() + '&start=1'),
-          presetLink('標準5問', '機会費用の計算あり', '#/practice?d=standard&n=5&seed=' + P.newSeed() + '&start=1'),
-          presetLink('授業導入5分', '予想→配分→結果を提示', '#/sim?intro=1')),
-        h('p', { class: 'small' }, h('strong', null, '生徒への配り方：'), '「リンクをコピー」を押し、Classroomなどの投稿欄に貼り付けて（Ctrl＋V、Macは⌘＋V）配ります。生徒はそのリンクを開くだけで始められます。'),
-        h('div', { class: 'inline wrap' },
-          h('a', { class: 'btn btn-outline', href: '#/practice' }, ui.icon('print'), '演習問題をつくる・A4プリントを印刷する'),
-          h('a', { class: 'btn btn-outline', href: '#/howto?for=teacher' }, ui.icon('book'), '先生向けマニュアル（印刷できます）')),
-        h('p', { class: 'muted small' }, '演習のリンクは、だれが開いても同じ問題が出ます。トップで作った例題（表）そのものをリンクで配る機能は、今後追加する予定です。アカウントやパスワードはなく、生徒の解答が先生に自動で送られることもありません。')));
+    /* ---- 先生の方へ（折りたたまずに見せる） ---- */
+    var teacher = h('div', { class: 'teacher-cta', id: 'teacher' },
+      h('div', { class: 'teacher-cta-text' },
+        h('p', { class: 'teacher-cta-title' }, '先生の方へ'),
+        h('p', null, '難易度を選んでボタンを押すだけで、自習課題のリンクや演習プリントを作れます。')),
+      h('div', { class: 'inline wrap' },
+        h('a', { class: 'btn btn-primary', href: '#/teacher' }, ui.icon('doc'), '課題・プリントをつくる'),
+        h('a', { class: 'btn btn-outline', href: '#/howto?for=teacher' }, ui.icon('book'), '先生向けマニュアル')));
 
     var foot = h('footer', { class: 'site-foot' },
       h('p', null, '表の数値は学習用の架空のものです。学習記録はこの端末のブラウザにだけ保存され、別の端末には引き継がれません。'),

@@ -5,7 +5,8 @@
  *   #/practice    演習問題（?d=intro|standard&n=5&seed=123&start=1）
  *   #/study       自習モード（?course=intro|standard&len=15|30）
  *   #/results     学習結果
- *   #/howto       使い方
+ *   #/howto       使い方・マニュアル（?for=student|teacher）
+ *   #/teacher     先生用：課題・プリントをつくる
  */
 (function (root) {
   'use strict';
@@ -24,7 +25,7 @@
     return { path: path, params: params };
   }
 
-  var ROUTES = { '/': 'home', '/sim': 'sim', '/practice': 'practice', '/study': 'study', '/results': 'results', '/howto': 'howto' };
+  var ROUTES = { '/': 'home', '/sim': 'sim', '/practice': 'practice', '/study': 'study', '/results': 'results', '/howto': 'howto', '/teacher': 'teacher' };
 
   function route() {
     var r = parseHash();

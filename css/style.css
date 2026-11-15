@@ -502,3 +502,32 @@ ol.steps { margin: 6px 0; padding-left: 1.5em; }
 .manual.sheet .btn-chip { box-shadow: none; border-color: #777; padding: 0 5px; }
 .manual.sheet .man-part { margin-bottom: 8px; }
 @media print { .man-part > h2 { break-after: avoid; page-break-after: avoid; } }
+
+/* ---------- 先生用：課題・プリントをつくる ---------- */
+.teacher-cta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin: 18px 0; padding: 16px 24px; border: 1.5px solid var(--line); border-radius: var(--radius); background: #fff; box-shadow: var(--shadow); }
+.teacher-cta p { margin: 0; }
+.teacher-cta-title { font-weight: 800; color: var(--navy); font-size: 1.15rem; }
+.level-pick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.level-btn { display: grid; gap: 2px; text-align: left; min-height: 72px; padding: 12px 20px; border: 2px solid var(--line); border-radius: var(--radius); background: #fff; cursor: pointer; color: var(--ink); }
+.level-btn strong { font-size: 1.35rem; color: var(--navy); }
+.level-btn span { color: var(--muted); font-size: .95rem; }
+.level-btn.on { border-color: var(--blue); background: var(--blue-50); box-shadow: 0 0 0 3px rgba(31, 99, 196, .18); }
+.level-btn.on strong::before { content: '✓ '; color: var(--blue); }
+.make-card { width: 100%; font: inherit; }
+.teacher-result:empty { display: none; }
+.teacher-result { margin-top: 16px; }
+.result-card { border: 2px solid #a9d9bb; background: #f3fbf6; border-radius: var(--radius); padding: 16px 20px; display: grid; gap: 10px; }
+.result-card p { margin: 0; }
+.result-head { font-size: 1.12rem; color: var(--navy); }
+.link-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.link-input { flex: 1 1 280px; min-width: 0; font-size: .9rem; color: var(--muted); }
+.big-actions .btn { min-width: 220px; }
+.sub-block { border-top: 1px dashed var(--line-strong); padding-top: 10px; }
+.sub-block .btn { margin-left: 8px; }
+.btn.on { border-color: var(--blue); background: var(--blue-50); }
+.other-list li { margin: 6px 0; }
+@media (max-width: 600px) {
+  .level-pick { grid-template-columns: 1fr; }
+  .big-actions .btn { flex: 1 1 100%; min-width: 0; }
+  .sub-block .btn { margin: 6px 0 0; }
+}

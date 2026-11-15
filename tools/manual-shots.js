@@ -26,8 +26,11 @@ const OUT = path.join(__dirname, '..', 'img', 'manual');
   await page.reload(); await hideToast();
   await shot('.hero', 'top.jpg');
   await shot('#example .panel', 'example.jpg');
-  await page.click('#teacher summary');
-  await shot('#teacher', 'teacher.jpg');
+  await page.goto(BASE + '#/teacher'); await hideToast();
+  await page.click('.level-btn:has-text("入門")');
+  await shot('.page-teacher', 'teacher.jpg');
+  await page.click('button:has-text("演習プリントをつくる")');
+  await shot('.result-card', 'sheet.jpg');
 
   await page.goto(BASE + '#/study'); await hideToast();
   await shot('.study .panel', 'course.jpg');
@@ -55,8 +58,6 @@ const OUT = path.join(__dirname, '..', 'img', 'manual');
   await page.waitForSelector('.result-panel');
   await shot('.result-panel', 'results.jpg');
 
-  await page.goto(BASE + '#/practice'); await hideToast();
-  await shot('.panel.setup', 'practice.jpg');
 
   await browser.close();
 })().catch(e => { console.error(e); process.exit(1); });
