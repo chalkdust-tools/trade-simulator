@@ -56,6 +56,11 @@
       }));
   }
 
+  /** 壊れた保存データは使わない */
+  function validQuiz(q) {
+    return (q && typeof q === 'object' && Array.isArray(q.specs) && Array.isArray(q.records) && q.index >= 0 && q.settings && P.DIFFICULTIES[q.settings.difficulty]) ? q : null;
+  }
+
   function render(app, params) {
     var settings = {
       difficulty: params.d === 'intro' ? 'intro' : 'standard',
@@ -112,7 +117,7 @@
 
     function setup() {
       ui.clear(body);
-      var resume = ui.store.get('quiz', null);
+      var resume = validQuiz(ui.store.get('quiz', null));
       if (resume && resume.specs && resume.index < resume.specs.length) {
         body.appendChild(h('div', { class: 'resume' },
           h('p', null, '解きかけの問題セットがあります（' + (resume.index + 1) + '問目から）。'),
@@ -178,7 +183,7 @@
       if (cs.length) settings.categories = cs;
     }
     if (params.start === '1') {
-      var cur = ui.store.get('quiz', null);
+      var cur = validQuiz(ui.store.get('quiz', null));
       // 同じ課題リンクを開き直した場合は続きから
       if (cur && cur.settings && cur.settings.seed === settings.seed && cur.settings.difficulty === settings.difficulty && cur.index < cur.specs.length) solve(cur);
       else start();

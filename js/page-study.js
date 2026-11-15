@@ -117,6 +117,8 @@
   /* ---------- 画面 ---------- */
   function render(app, params) {
     var st = ui.store.get('study', null);
+    // 壊れた保存データは使わない
+    if (st && (typeof st !== 'object' || !COURSE[st.course] || [15, 30].indexOf(st.len) < 0 || !(st.step >= 0 && st.step < 8) || typeof st.checks !== 'object' || !st.checks || typeof st.exp !== 'object' || !st.exp)) { st = null; ui.store.remove('study'); }
     var main = h('div', { class: 'study' });
     ui.append(app, [ui.pageHead('自習モード', [{ text: '自習モード' }]), main]);
 

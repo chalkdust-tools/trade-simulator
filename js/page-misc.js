@@ -7,6 +7,8 @@
 
   function results(app) {
     var r = ui.store.get('results', null);
+    // 壊れた保存データは使わない
+    if (!r || typeof r !== 'object' || typeof r.title !== 'string' || !Array.isArray(r.records || [])) r = null;
     app.appendChild(ui.pageHead('学習結果', [{ text: '学習結果' }]));
     if (!r) {
       app.appendChild(h('div', { class: 'panel' }, h('p', null, 'まだ学習結果はありません。'),
